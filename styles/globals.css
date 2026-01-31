@@ -2,18 +2,91 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Global styles for DBMS dashboard - minimal, professional baseline */
+/* Advanced design system for professional DBMS observability dashboard */
 @layer base {
   :root {
+    /* Typography system */
     --font-sans: var(--font-inter);
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", monospace;
+    
+    /* Sophisticated neutral palette with depth */
+    --color-text-primary: #0f172a;      /* slate-900 - sharp, professional */
+    --color-text-secondary: #475569;    /* slate-600 - refined secondary */
+    --color-text-muted: #64748b;        /* slate-500 - elegant muted */
+    --color-text-accent: #1e293b;       /* slate-800 - subtle emphasis */
+    
+    --color-bg-primary: #ffffff;        /* pure white - clean base */
+    --color-bg-secondary: #f8fafc;      /* slate-50 - sophisticated backdrop */
+    --color-bg-tertiary: #f1f5f9;       /* slate-100 - elevated surfaces */
+    --color-bg-elevated: #e2e8f0;       /* slate-200 - interactive surfaces */
+    
+    /* Refined border system with hierarchy */
+    --color-border-light: #e2e8f0;      /* slate-200 - subtle divisions */
+    --color-border-medium: #cbd5e1;     /* slate-300 - defined boundaries */
+    --color-border-strong: #94a3b8;     /* slate-400 - emphasis borders */
+    
+    /* Sophisticated shadows for depth */
+    --shadow-subtle: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-medium: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-elevated: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   }
   
   html {
-    font-family: var(--font-sans), system-ui, sans-serif;
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
   
   body {
-    background-color: #f9fafb; /* gray-50 */
-    color: #111827; /* gray-900 */
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    min-height: 100vh;
+  }
+
+  /* Enhanced typography with visual hierarchy */
+  h1 {
+    font-size: 1.5rem;
+    line-height: 2rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    letter-spacing: -0.025em;
+  }
+  
+  h2 {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    letter-spacing: -0.025em;
+  }
+  
+  h3 {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    font-weight: 600;
+    color: var(--color-text-accent);
+  }
+  
+  /* Refined body text with improved readability */
+  p, div, span {
+    font-size: 0.875rem;
+    line-height: 1.5rem;
+    color: var(--color-text-primary);
+  }
+  
+  /* Enhanced focus states for accessibility */
+  *:focus-visible {
+    outline: 2px solid var(--color-text-primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  
+  /* Smooth micro-interactions */
+  * {
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
