@@ -4,7 +4,7 @@
 export interface SidebarItem {
   label: string;
   category: 'pipeline' | 'oversight' | 'system';
-  future_route: string; // Placeholder for routing implementation
+  href: string;
 }
 
 export interface SidebarSection {
@@ -20,27 +20,27 @@ export const sidebarStructure: SidebarSection[] = [
       {
         label: "System Overview",
         category: "pipeline",
-        future_route: "/dashboard/overview"
+        href: "/dashboard/overview"
       },
       {
         label: "Detected Issues", 
         category: "pipeline",
-        future_route: "/dashboard/issues"
+        href: "/dashboard/issues"
       },
       {
         label: "AI Analysis",
         category: "pipeline", 
-        future_route: "/dashboard/analysis"
+        href: "/dashboard/analysis"
       },
       {
         label: "Decisions",
         category: "pipeline",
-        future_route: "/dashboard/decisions"
+        href: "/dashboard/decisions"
       },
       {
         label: "Healing Actions",
         category: "pipeline",
-        future_route: "/dashboard/actions"
+        href: "/dashboard/actions"
       }
     ]
   },
@@ -50,12 +50,12 @@ export const sidebarStructure: SidebarSection[] = [
       {
         label: "Admin Review",
         category: "oversight",
-        future_route: "/dashboard/admin-review"
+        href: "/dashboard/admin-review"
       },
       {
         label: "Learning History",
         category: "oversight", 
-        future_route: "/dashboard/learning"
+        href: "/dashboard/learning"
       }
     ]
   },
@@ -65,7 +65,7 @@ export const sidebarStructure: SidebarSection[] = [
       {
         label: "Health & Logs",
         category: "system",
-        future_route: "/dashboard/system-health"
+        href: "/dashboard/system-health"
       }
     ]
   }

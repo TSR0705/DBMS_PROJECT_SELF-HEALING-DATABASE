@@ -1,5 +1,3 @@
-import { Separator } from "@/components/ui/separator";
-
 interface SectionProps {
   title: string;
   description?: string;
@@ -7,27 +5,23 @@ interface SectionProps {
   className?: string;
 }
 
-// Modern section container with sophisticated visual hierarchy
+// Console section container - clear framing without card aesthetics
 export function Section({ title, description, children, className = "" }: SectionProps) {
   return (
-    <section className={`space-y-6 ${className}`}>
-      <header className="space-y-3">
-        <div className="flex items-center space-x-4">
-          <div className="flex-1">
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-              {title}
-            </h2>
-            {description && (
-              <p className="text-sm text-slate-600 leading-relaxed mt-2 max-w-2xl">
-                {description}
-              </p>
-            )}
-          </div>
-          <div className="w-12 h-px bg-gradient-to-r from-slate-300 to-transparent" />
-        </div>
+    <section className={`mt-8 first:mt-0 ${className}`}>
+      <header className="mb-4">
+        <h2 className="text-lg font-medium text-neutral-900 mb-1">
+          {title}
+        </h2>
+        {description && (
+          <p className="text-sm text-neutral-600 leading-relaxed">
+            {description}
+          </p>
+        )}
+        <div className="mt-3 h-px bg-neutral-200" />
       </header>
       
-      <div className="space-y-6">
+      <div className="mt-6">
         {children}
       </div>
     </section>
