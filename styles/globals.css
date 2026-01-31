@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global styles for DBMS dashboard - minimal, professional baseline */
+@layer base {
+  :root {
+    --font-sans: var(--font-inter);
+  }
+  
+  html {
+    font-family: var(--font-sans), system-ui, sans-serif;
+  }
+  
+  body {
+    background-color: #f9fafb; /* gray-50 */
+    color: #111827; /* gray-900 */
+  }
+}
