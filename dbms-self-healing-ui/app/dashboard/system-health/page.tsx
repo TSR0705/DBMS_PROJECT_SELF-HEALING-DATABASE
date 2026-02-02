@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from "react";
-import { Section } from "@/components/ui-dbms/Section";
-import { StatsCard } from "@/components/ui-dbms/StatsCard";
-import { apiClient, HealthCheck } from "@/lib/api";
+import { useEffect, useState } from 'react';
+import { Section } from '@/components/ui-dbms/Section';
+import { StatsCard } from '@/components/ui-dbms/StatsCard';
+import { apiClient, HealthCheck } from '@/lib/api';
 
 // Ultra-modern System Health Dashboard with advanced visual effects
 export default function SystemHealth() {
@@ -18,13 +18,15 @@ export default function SystemHealth() {
         setLoading(true);
         const [health, dbHealth] = await Promise.all([
           apiClient.getHealthCheck(),
-          apiClient.getDatabaseHealth()
+          apiClient.getDatabaseHealth(),
         ]);
         setHealthData(health);
         setDatabaseHealth(dbHealth);
         setError(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch health data');
+        setError(
+          err instanceof Error ? err.message : 'Failed to fetch health data'
+        );
         console.error('Error fetching health data:', err);
       } finally {
         setLoading(false);
@@ -32,10 +34,10 @@ export default function SystemHealth() {
     };
 
     fetchHealthData();
-    
+
     // Set up polling for real-time updates every 10 seconds
     const interval = setInterval(fetchHealthData, 10000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -73,18 +75,30 @@ export default function SystemHealth() {
             Real-time system health monitoring and performance metrics
           </p>
         </div>
-        
+
         {/* Enhanced error state */}
         <div className="max-w-2xl mx-auto">
           <div className="bg-gradient-to-br from-red-50 to-rose-50 border border-red-200 rounded-2xl p-8 shadow-lg">
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-red-500 rounded-2xl flex items-center justify-center shadow-lg">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                <svg
+                  className="w-6 h-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                  />
                 </svg>
               </div>
               <div className="flex-1">
-                <h3 className="text-xl font-bold text-red-900 mb-2">Health Check Failed</h3>
+                <h3 className="text-xl font-bold text-red-900 mb-2">
+                  Health Check Failed
+                </h3>
                 <p className="text-red-700">{error}</p>
               </div>
             </div>
@@ -107,22 +121,31 @@ export default function SystemHealth() {
             System Health
           </h1>
           <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
-            Real-time system health monitoring and performance metrics with intelligent diagnostics
+            Real-time system health monitoring and performance metrics with
+            intelligent diagnostics
           </p>
-          
+
           {/* Status indicator */}
           <div className="flex items-center justify-center space-x-3 mt-6">
-            <div className={`flex items-center space-x-2 backdrop-blur-xl rounded-full px-6 py-3 shadow-lg border ${
-              isHealthy 
-                ? 'bg-green-50/80 border-green-200/50' 
-                : 'bg-red-50/80 border-red-200/50'
-            }`}>
-              <div className={`w-3 h-3 rounded-full shadow-lg ${
-                isHealthy ? 'bg-green-400 animate-pulse shadow-green-400/50' : 'bg-red-400 shadow-red-400/50'
-              }`}></div>
-              <span className={`text-sm font-bold ${
-                isHealthy ? 'text-green-700' : 'text-red-700'
-              }`}>
+            <div
+              className={`flex items-center space-x-2 backdrop-blur-xl rounded-full px-6 py-3 shadow-lg border ${
+                isHealthy
+                  ? 'bg-green-50/80 border-green-200/50'
+                  : 'bg-red-50/80 border-red-200/50'
+              }`}
+            >
+              <div
+                className={`w-3 h-3 rounded-full shadow-lg ${
+                  isHealthy
+                    ? 'bg-green-400 animate-pulse shadow-green-400/50'
+                    : 'bg-red-400 shadow-red-400/50'
+                }`}
+              ></div>
+              <span
+                className={`text-sm font-bold ${
+                  isHealthy ? 'text-green-700' : 'text-red-700'
+                }`}
+              >
                 {healthData?.status?.toUpperCase() || 'UNKNOWN'}
               </span>
             </div>
@@ -138,8 +161,18 @@ export default function SystemHealth() {
           subtitle="System availability"
           color={isHealthy ? 'green' : 'red'}
           icon={
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
           }
         />
@@ -150,20 +183,44 @@ export default function SystemHealth() {
           subtitle="Connection status"
           color={isDatabaseConnected ? 'blue' : 'red'}
           icon={
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"
+              />
             </svg>
           }
         />
 
         <StatsCard
           title="Last Check"
-          value={healthData?.timestamp ? new Date(healthData.timestamp).toLocaleTimeString() : 'N/A'}
+          value={
+            healthData?.timestamp
+              ? new Date(healthData.timestamp).toLocaleTimeString()
+              : 'N/A'
+          }
           subtitle="Health monitoring"
           color="purple"
           icon={
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
           }
         />
@@ -186,31 +243,46 @@ export default function SystemHealth() {
                 <div className="flex justify-between items-center p-4 bg-white/60 rounded-xl border border-white/30">
                   <span className="font-medium text-slate-600">Status</span>
                   <div className="flex items-center space-x-2">
-                    <div className={`w-2 h-2 rounded-full ${
-                      databaseHealth.database_status === 'connected' ? 'bg-green-400' : 'bg-red-400'
-                    }`}></div>
+                    <div
+                      className={`w-2 h-2 rounded-full ${
+                        databaseHealth.database_status === 'connected'
+                          ? 'bg-green-400'
+                          : 'bg-red-400'
+                      }`}
+                    ></div>
                     <span className="font-bold text-slate-900 capitalize">
                       {databaseHealth.database_status}
                     </span>
                   </div>
                 </div>
-                
+
                 <div className="flex justify-between items-center p-4 bg-white/60 rounded-xl border border-white/30">
-                  <span className="font-medium text-slate-600">Response Time</span>
+                  <span className="font-medium text-slate-600">
+                    Response Time
+                  </span>
                   <div className="text-right">
-                    <div className={`text-lg font-bold ${
-                      databaseHealth.response_time_ms < 100 ? 'text-green-600' :
-                      databaseHealth.response_time_ms < 500 ? 'text-yellow-600' : 'text-red-600'
-                    }`}>
+                    <div
+                      className={`text-lg font-bold ${
+                        databaseHealth.response_time_ms < 100
+                          ? 'text-green-600'
+                          : databaseHealth.response_time_ms < 500
+                            ? 'text-yellow-600'
+                            : 'text-red-600'
+                      }`}
+                    >
                       {databaseHealth.response_time_ms}ms
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex justify-between items-center p-4 bg-white/60 rounded-xl border border-white/30">
-                  <span className="font-medium text-slate-600">Database Time</span>
+                  <span className="font-medium text-slate-600">
+                    Database Time
+                  </span>
                   <span className="font-mono text-sm text-slate-900">
-                    {databaseHealth.database_time ? new Date(databaseHealth.database_time).toLocaleString() : 'N/A'}
+                    {databaseHealth.database_time
+                      ? new Date(databaseHealth.database_time).toLocaleString()
+                      : 'N/A'}
                   </span>
                 </div>
               </div>
@@ -224,32 +296,49 @@ export default function SystemHealth() {
               </h4>
               <div className="space-y-4">
                 <div className="flex items-center space-x-3 p-4 bg-white/60 rounded-xl border border-white/30">
-                  <div className={`w-4 h-4 rounded-full ${
-                    databaseHealth.response_time_ms < 100 ? 'bg-green-400' :
-                    databaseHealth.response_time_ms < 500 ? 'bg-yellow-400' : 'bg-red-400'
-                  }`}></div>
+                  <div
+                    className={`w-4 h-4 rounded-full ${
+                      databaseHealth.response_time_ms < 100
+                        ? 'bg-green-400'
+                        : databaseHealth.response_time_ms < 500
+                          ? 'bg-yellow-400'
+                          : 'bg-red-400'
+                    }`}
+                  ></div>
                   <div className="flex-1">
-                    <div className="font-medium text-slate-700">Response Time</div>
+                    <div className="font-medium text-slate-700">
+                      Response Time
+                    </div>
                     <div className="text-sm text-slate-500">
-                      {databaseHealth.response_time_ms < 100 ? 'Excellent' :
-                       databaseHealth.response_time_ms < 500 ? 'Good' : 'Needs Attention'}
+                      {databaseHealth.response_time_ms < 100
+                        ? 'Excellent'
+                        : databaseHealth.response_time_ms < 500
+                          ? 'Good'
+                          : 'Needs Attention'}
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-bold text-slate-900">
-                      {Math.round((1000 / databaseHealth.response_time_ms) * 100) / 100} req/s
+                      {Math.round(
+                        (1000 / databaseHealth.response_time_ms) * 100
+                      ) / 100}{' '}
+                      req/s
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-3 p-4 bg-white/60 rounded-xl border border-white/30">
                   <div className="w-4 h-4 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
-                  <span className="font-medium text-slate-700">Real-time Monitoring</span>
+                  <span className="font-medium text-slate-700">
+                    Real-time Monitoring
+                  </span>
                 </div>
-                
+
                 <div className="flex items-center space-x-3 p-4 bg-white/60 rounded-xl border border-white/30">
                   <div className="w-4 h-4 bg-blue-400 rounded-full animate-pulse shadow-lg shadow-blue-400/50"></div>
-                  <span className="font-medium text-slate-700">Auto-refresh: 10s</span>
+                  <span className="font-medium text-slate-700">
+                    Auto-refresh: 10s
+                  </span>
                 </div>
               </div>
             </div>
@@ -278,7 +367,9 @@ export default function SystemHealth() {
                   </span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-white/60 rounded-xl border border-white/30">
-                  <span className="font-medium text-slate-600">Environment</span>
+                  <span className="font-medium text-slate-600">
+                    Environment
+                  </span>
                   <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
                     Development
                   </span>
@@ -289,7 +380,7 @@ export default function SystemHealth() {
                 </div>
               </div>
             </div>
-            
+
             {/* Monitoring Status */}
             <div>
               <h4 className="text-xl font-bold text-slate-900 mb-6 flex items-center">
@@ -299,15 +390,21 @@ export default function SystemHealth() {
               <div className="space-y-4">
                 <div className="flex items-center space-x-3 p-4 bg-white/60 rounded-xl border border-white/30">
                   <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
-                  <span className="font-medium text-slate-700">Health checks active</span>
+                  <span className="font-medium text-slate-700">
+                    Health checks active
+                  </span>
                 </div>
                 <div className="flex items-center space-x-3 p-4 bg-white/60 rounded-xl border border-white/30">
                   <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse shadow-lg shadow-blue-400/50"></div>
-                  <span className="font-medium text-slate-700">Real-time updates enabled</span>
+                  <span className="font-medium text-slate-700">
+                    Real-time updates enabled
+                  </span>
                 </div>
                 <div className="flex items-center space-x-3 p-4 bg-white/60 rounded-xl border border-white/30">
                   <div className="w-3 h-3 bg-purple-400 rounded-full animate-pulse shadow-lg shadow-purple-400/50"></div>
-                  <span className="font-medium text-slate-700">Performance tracking active</span>
+                  <span className="font-medium text-slate-700">
+                    Performance tracking active
+                  </span>
                 </div>
               </div>
             </div>

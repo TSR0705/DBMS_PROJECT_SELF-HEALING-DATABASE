@@ -5,7 +5,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 
 // Enhanced column definition for DBMS data tables with render support
 export interface DataTableColumn<T> {
@@ -27,16 +27,21 @@ interface DataTableProps<T> {
 export function DataTable<T extends Record<string, any>>({
   columns,
   data,
-  className = "",
+  className = '',
   loading = false,
 }: DataTableProps<T>) {
   if (loading) {
     return (
-      <div className={`bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 overflow-hidden ${className}`}>
+      <div
+        className={`bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 overflow-hidden ${className}`}
+      >
         <div className="p-8">
           <div className="space-y-4">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 h-12 rounded-xl animate-pulse"></div>
+              <div
+                key={i}
+                className="bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 h-12 rounded-xl animate-pulse"
+              ></div>
             ))}
           </div>
         </div>
@@ -45,7 +50,9 @@ export function DataTable<T extends Record<string, any>>({
   }
 
   return (
-    <div className={`bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 overflow-hidden ${className}`}>
+    <div
+      className={`bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 overflow-hidden ${className}`}
+    >
       {/* Enhanced table header */}
       <div className="bg-gradient-to-r from-slate-900/5 via-blue-900/5 to-indigo-900/5 border-b border-slate-200/50">
         <Table>
@@ -54,8 +61,8 @@ export function DataTable<T extends Record<string, any>>({
               {columns.map((column, index) => (
                 <TableHead
                   key={String(column.key)}
-                  className={`text-xs font-bold text-slate-700 uppercase tracking-wider px-6 py-5 bg-transparent animate-fade-in ${column.className || ""}`}
-                  style={{animationDelay: `${index * 50}ms`}}
+                  className={`text-xs font-bold text-slate-700 uppercase tracking-wider px-6 py-5 bg-transparent animate-fade-in ${column.className || ''}`}
+                  style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <div className="flex items-center space-x-2">
                     <div className="w-1 h-4 bg-gradient-to-b from-blue-500 to-indigo-600 rounded-full"></div>
@@ -80,13 +87,27 @@ export function DataTable<T extends Record<string, any>>({
                 >
                   <div className="flex flex-col items-center space-y-4 animate-fade-in">
                     <div className="w-16 h-16 bg-gradient-to-br from-slate-200 to-slate-300 rounded-2xl flex items-center justify-center shadow-lg">
-                      <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                      <svg
+                        className="w-8 h-8 text-slate-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                        />
                       </svg>
                     </div>
                     <div className="text-slate-500">
-                      <div className="text-lg font-semibold mb-1">No data available</div>
-                      <div className="text-sm">Data will appear here when available</div>
+                      <div className="text-lg font-semibold mb-1">
+                        No data available
+                      </div>
+                      <div className="text-sm">
+                        Data will appear here when available
+                      </div>
                     </div>
                   </div>
                 </TableCell>
@@ -96,26 +117,24 @@ export function DataTable<T extends Record<string, any>>({
                 <TableRow
                   key={rowIndex}
                   className="border-b border-slate-100/50 hover:bg-gradient-to-r hover:from-blue-50/30 hover:to-indigo-50/30 transition-all duration-300 group animate-fade-in"
-                  style={{animationDelay: `${rowIndex * 50}ms`}}
+                  style={{ animationDelay: `${rowIndex * 50}ms` }}
                 >
                   {columns.map((column, colIndex) => {
                     const value = row[column.key];
-                    const renderedValue = column.render 
+                    const renderedValue = column.render
                       ? column.render(value, row, rowIndex)
                       : value;
 
                     return (
                       <TableCell
                         key={String(column.key)}
-                        className={`text-sm px-6 py-4 group-hover:bg-white/50 transition-all duration-300 ${column.className || ""}`}
+                        className={`text-sm px-6 py-4 group-hover:bg-white/50 transition-all duration-300 ${column.className || ''}`}
                       >
                         <div className="flex items-center space-x-2">
                           {colIndex === 0 && (
                             <div className="w-1 h-6 bg-gradient-to-b from-blue-400 to-indigo-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                           )}
-                          <div className="flex-1">
-                            {renderedValue}
-                          </div>
+                          <div className="flex-1">{renderedValue}</div>
                         </div>
                       </TableCell>
                     );

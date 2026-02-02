@@ -3,13 +3,15 @@
 ## Philosophy: "Calm Density"
 
 This design system prioritizes sustained analytical work over visual appeal. Every decision optimizes for:
+
 - **Cognitive load reduction** during long monitoring sessions
-- **Information density** without overwhelming users  
+- **Information density** without overwhelming users
 - **Consistent rhythm** that guides the eye naturally
 
 ## Layout Rhythm Rules
 
 ### Spacing Scale (8px grid)
+
 - `space-xs` (8px): Tight spacing within components (button padding, input margins)
 - `space-sm` (12px): Small gaps between related elements (form fields, list items)
 - `space-md` (16px): Standard component spacing (card padding, section gaps)
@@ -19,12 +21,14 @@ This design system prioritizes sustained analytical work over visual appeal. Eve
 - `space-3xl` (64px): Major layout divisions (sidebar to main content)
 
 ### Content Width Discipline
+
 - `max-w-content-sm` (512px): Narrow forms, navigation panels
 - `max-w-content-md` (768px): Main content areas, detailed views
 - `max-w-content-lg` (1024px): Wide tables, dashboard grids
 - `max-w-content-xl` (1280px): Full-width layouts, monitoring displays
 
 ### Typography Hierarchy
+
 - `text-xs` (12px): Timestamps, metadata, table annotations
 - `text-sm` (14px): Table data, secondary information, form labels
 - `text-base` (16px): Body text, form inputs, primary content

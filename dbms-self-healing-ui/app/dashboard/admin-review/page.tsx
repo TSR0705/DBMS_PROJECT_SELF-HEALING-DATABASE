@@ -8,8 +8,9 @@ export default function AdminReview() {
           Admin Review
         </h1>
         <p className="text-sm text-gray-600 leading-relaxed">
-          Issues and actions requiring human validation, escalated decisions, and manual intervention points. 
-          Includes approval workflows, override capabilities, and audit trails for administrative actions.
+          Issues and actions requiring human validation, escalated decisions,
+          and manual intervention points. Includes approval workflows, override
+          capabilities, and audit trails for administrative actions.
         </p>
       </header>
 

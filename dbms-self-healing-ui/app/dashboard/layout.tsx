@@ -1,4 +1,4 @@
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { DashboardShell } from '@/components/layout/DashboardShell';
 
 // Dashboard-specific layout wrapper - provides persistent sidebar across all dashboard routes
 export default function DashboardLayout({

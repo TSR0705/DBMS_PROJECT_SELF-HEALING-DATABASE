@@ -15,58 +15,58 @@ export interface SidebarSection {
 // Sidebar structure maps directly to DBMS self-healing lifecycle stages
 export const sidebarStructure: SidebarSection[] = [
   {
-    title: "Core Pipeline",
+    title: 'Core Pipeline',
     items: [
       {
-        label: "System Overview",
-        category: "pipeline",
-        href: "/dashboard/overview"
+        label: 'System Overview',
+        category: 'pipeline',
+        href: '/dashboard/overview',
       },
       {
-        label: "Detected Issues", 
-        category: "pipeline",
-        href: "/dashboard/issues"
+        label: 'Detected Issues',
+        category: 'pipeline',
+        href: '/dashboard/issues',
       },
       {
-        label: "AI Analysis",
-        category: "pipeline", 
-        href: "/dashboard/analysis"
+        label: 'AI Analysis',
+        category: 'pipeline',
+        href: '/dashboard/analysis',
       },
       {
-        label: "Decisions",
-        category: "pipeline",
-        href: "/dashboard/decisions"
+        label: 'Decisions',
+        category: 'pipeline',
+        href: '/dashboard/decisions',
       },
       {
-        label: "Healing Actions",
-        category: "pipeline",
-        href: "/dashboard/actions"
-      }
-    ]
+        label: 'Healing Actions',
+        category: 'pipeline',
+        href: '/dashboard/actions',
+      },
+    ],
   },
   {
-    title: "Oversight",
+    title: 'Oversight',
     items: [
       {
-        label: "Admin Review",
-        category: "oversight",
-        href: "/dashboard/admin-review"
+        label: 'Admin Review',
+        category: 'oversight',
+        href: '/dashboard/admin-review',
       },
       {
-        label: "Learning History",
-        category: "oversight", 
-        href: "/dashboard/learning"
-      }
-    ]
+        label: 'Learning History',
+        category: 'oversight',
+        href: '/dashboard/learning',
+      },
+    ],
   },
   {
-    title: "System",
+    title: 'System',
     items: [
       {
-        label: "Health & Logs",
-        category: "system",
-        href: "/dashboard/system-health"
-      }
-    ]
-  }
+        label: 'Health & Logs',
+        category: 'system',
+        href: '/dashboard/system-health',
+      },
+    ],
+  },
 ];

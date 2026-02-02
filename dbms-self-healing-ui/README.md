@@ -29,6 +29,7 @@ A comprehensive user interface for monitoring, managing, and visualizing the sel
 ### Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/TSR0705/DBMS_PROJECT_SELF-HEALING-DATABASE.git
    cd dbms-self-healing-ui
@@ -44,6 +45,7 @@ A comprehensive user interface for monitoring, managing, and visualizing the sel
 ### Running the Application
 
 1. Development mode:
+
    ```bash
    npm run dev
    # or

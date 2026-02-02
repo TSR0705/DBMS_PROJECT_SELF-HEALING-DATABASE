@@ -91,7 +91,9 @@ class ApiClient {
       });
 
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `API request failed: ${response.status} ${response.statusText}`
+        );
       }
 
       return response.json();
@@ -141,11 +143,14 @@ class ApiClient {
   }
 
   // Actions API
-  async getHealingActions(limit?: number, status?: string): Promise<HealingAction[]> {
+  async getHealingActions(
+    limit?: number,
+    status?: string
+  ): Promise<HealingAction[]> {
     const params = new URLSearchParams();
     if (limit) params.append('limit', limit.toString());
     if (status) params.append('status', status);
-    
+
     const query = params.toString() ? `?${params.toString()}` : '';
     return this.request<HealingAction[]>(`/actions/${query}`);
   }
