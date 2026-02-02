@@ -1,148 +1,199 @@
-# DBMS Self-Healing Database - UI Dashboard
+# DBMS Self-Healing Dashboard
 
-A comprehensive user interface for monitoring, managing, and visualizing the self-healing capabilities of a database management system.
+A modern, real-time dashboard for monitoring and managing a self-healing database management system. Built with Next.js frontend and FastAPI backend.
 
-## 🚀 Features
+## 🚀 Quick Start
 
-- Real-time database health monitoring
-- Automated healing process visualization
-- Performance metrics dashboard
-- Error detection and alerting
-- Healing recommendations interface
-- Historical data analysis
+### Prerequisites
+- Python 3.8+
+- Node.js 18+
+- MySQL database (for production data)
 
-## 🛠️ Tech Stack
-
-- **Framework**: Next.js 16.1.6
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **Runtime**: Node.js
-- **Package Manager**: npm/yarn
-
-## 📋 Prerequisites
-
-- Node.js (v18 or higher)
-- npm or yarn
-
-## 🚀 Getting Started
-
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/TSR0705/DBMS_PROJECT_SELF-HEALING-DATABASE.git
-   cd dbms-self-healing-ui
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   # or
-   yarn install
-   ```
-
-### Running the Application
-
-1. Development mode:
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   ```
-
-2. Open your browser and navigate to [http://localhost:3000](http://localhost:3000)
-
-### Building for Production
+### 1. Backend Setup
 
 ```bash
-npm run build
-# or
-yarn build
+cd dbms-backend
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Configure environment (copy and edit .env.example)
+cp .env.example .env
+
+# Start the API server
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Running in Production
+### 2. Frontend Setup
 
 ```bash
-npm start
-# or
-yarn start
+cd dbms-self-healing-ui
+
+# Install Node.js dependencies
+npm install
+
+# Start the development server
+npm run dev
 ```
 
-## 📁 Project Structure
+### 3. Quick Start (Windows)
 
-```
-├── app/                 # Next.js 13+ App Router
-│   ├── globals.css      # Global styles
-│   ├── layout.tsx       # Root layout
-│   └── page.tsx         # Home page
-├── public/              # Static assets
-├── components/          # Reusable React components
-├── lib/                 # Utility functions
-├── styles/              # Additional style files
-├── .gitignore          # Git ignore rules
-├── .prettierrc         # Prettier configuration
-├── .prettierignore     # Prettier ignore rules
-├── .editorconfig       # Editor configuration
-├── next.config.ts      # Next.js configuration
-├── tailwind.config.ts  # Tailwind CSS configuration
-├── tsconfig.json       # TypeScript configuration
-├── package.json        # Project dependencies and scripts
-└── README.md          # Project documentation
+Run both servers with one command:
+```bash
+start-dev.bat
 ```
 
-## 🧪 Scripts
+## 🌐 Access Points
 
-- `npm run dev` - Start the development server
-- `npm run build` - Build the application for production
-- `npm start` - Start the production server
-- `npm run lint` - Run ESLint for code quality
+- **Frontend Dashboard**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **API Documentation**: http://localhost:8000/docs
+- **API Health Check**: http://localhost:8000/health
 
-## 🔒 Environment Variables
+## 📊 Features
 
-If you need to configure environment variables, create a `.env.local` file in the root directory:
+### Real-time Monitoring
+- **Issues Dashboard**: Live detection and monitoring of database issues
+- **System Health**: Real-time API and database connectivity status
+- **Auto-refresh**: Automatic data updates every 30 seconds (issues) / 10 seconds (health)
 
+### API Integration
+- **RESTful API**: FastAPI backend with automatic OpenAPI documentation
+- **Type Safety**: Full TypeScript integration with Pydantic models
+- **Error Handling**: Comprehensive error handling and user feedback
+- **CORS Support**: Configured for local development
+
+### Modern UI/UX
+- **Responsive Design**: Works on desktop and mobile devices
+- **Loading States**: Skeleton loading and smooth transitions
+- **Error States**: Clear error messages and connection status
+- **Real-time Updates**: Live data polling with visual indicators
+
+## 🏗️ Architecture
+
+### Backend (FastAPI)
+```
+dbms-backend/
+├── app/
+│   ├── main.py              # FastAPI application
+│   ├── database/
+│   │   └── connection.py    # Database connection layer
+│   ├── models/
+│   │   └── schemas.py       # Pydantic data models
+│   └── routers/
+│       ├── issues.py        # Issues API endpoints
+│       ├── actions.py       # Healing actions API
+│       └── health.py        # Health check endpoints
+├── requirements.txt         # Python dependencies
+└── .env.example            # Environment configuration
+```
+
+### Frontend (Next.js)
+```
+dbms-self-healing-ui/
+├── app/
+│   ├── dashboard/          # Dashboard pages
+│   │   ├── issues/         # Issues monitoring
+│   │   └── system-health/  # Health monitoring
+│   └── layout.tsx          # Root layout
+├── components/
+│   ├── ui-dbms/           # Custom DBMS components
+│   └── layout/            # Layout components
+├── lib/
+│   └── api.ts             # API client
+└── .env.local             # Environment variables
+```
+
+## 🔧 Configuration
+
+### Backend Environment (.env)
 ```env
-# Database connection
-DATABASE_URL="your_database_url"
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=dbms_healing
+DB_USER=your_username
+DB_PASSWORD=your_password
 
-# API keys
-API_KEY="your_api_key"
-
-# Other configurations
-NEXT_PUBLIC_BASE_URL="http://localhost:3000"
+# API Configuration
+API_HOST=0.0.0.0
+API_PORT=8000
 ```
 
-## 🤝 Contributing
+### Frontend Environment (.env.local)
+```env
+# Backend API URL
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Commit your changes (`git commit -m 'Add amazing feature'`)
-5. Push to the branch (`git push origin feature/amazing-feature`)
-6. Open a Pull Request
+## 📡 API Endpoints
 
-## 📄 License
+### Issues
+- `GET /issues/` - Get all detected issues
+- `GET /issues/{issue_id}/analysis` - Get AI analysis for specific issue
+- `GET /issues/{issue_id}/decision` - Get decision for specific issue
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+### Health
+- `GET /health/` - Basic health check
+- `GET /health/database` - Database connectivity check
 
-## 🐛 Issues
+### Actions
+- `GET /actions/` - Get healing actions
+- `GET /actions/{action_id}` - Get specific healing action
 
-If you encounter any issues, please open an issue in the repository.
+## 🔄 Real-time Features
 
-## 👥 Authors
+### Auto-refresh Intervals
+- **Issues Page**: 30 seconds
+- **System Health**: 10 seconds
+- **Visual Indicators**: Pulse animations for live data
 
-- **Tanmay Singh** - [GitHub Profile](https://github.com/TSR0705)
+### Connection Handling
+- **Error States**: Clear error messages when backend is unavailable
+- **Loading States**: Skeleton loading during data fetch
+- **Retry Logic**: Automatic reconnection attempts
 
-## 🙏 Acknowledgments
+## 🛠️ Development
 
-- Thanks to the Next.js team for the amazing framework
-- Thanks to the Tailwind CSS team for the utility-first CSS framework
-- Thanks to the TypeScript team for the static typing
+### Adding New Pages
+1. Create page component in `app/dashboard/[page-name]/page.tsx`
+2. Add route to sidebar structure in `components/layout/sidebar-structure.ts`
+3. Implement API integration using `lib/api.ts`
 
-## 📞 Contact
+### Adding New API Endpoints
+1. Create router in `dbms-backend/app/routers/`
+2. Define Pydantic models in `app/models/schemas.py`
+3. Add database queries in router functions
+4. Update API client in frontend `lib/api.ts`
 
-- Email: tanmaysingh8246@gmail.com
+## 🚨 Troubleshooting
 
----
+### Backend Issues
+- **Port 8000 in use**: Change port in uvicorn command
+- **Database connection**: Check MySQL server and credentials
+- **Import errors**: Ensure all `__init__.py` files exist
 
-⭐ If you find this project helpful, please give it a star!
+### Frontend Issues
+- **API connection**: Verify backend is running on port 8000
+- **CORS errors**: Check CORS configuration in backend
+- **Build errors**: Run `npm install` to update dependencies
+
+## 📈 Performance
+
+### Optimization Features
+- **Efficient Polling**: Smart refresh intervals based on data type
+- **Error Boundaries**: Graceful error handling without crashes
+- **Lazy Loading**: Components load only when needed
+- **Caching**: Browser caching for static assets
+
+## 🔐 Security
+
+### Current Implementation
+- **Read-only API**: All endpoints are GET requests only
+- **Input Validation**: Pydantic models validate all inputs
+- **Error Sanitization**: No sensitive data in error messages
+- **CORS Configuration**: Restricted to development origins
+
+## 📝 License
+
+This project is part of a DBMS course project and is intended for educational purposes.
