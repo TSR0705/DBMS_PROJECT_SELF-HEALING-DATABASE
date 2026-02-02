@@ -1,0 +1,20 @@
+{
+  "workspace": {
+    "id": "",
+    "name": "DBMS Self-Healing API",
+    "description": "API testing workspace for DBMS self-healing pipeline"
+  },
+  "collection": {
+    "id": "",
+    "name": "DBMS Issues API",
+    "description": "Test collection for DBMS self-healing issues endpoints"
+  },
+  "environment": {
+    "id": "",
+    "name": "Local Development",
+    "values": {
+      "base_url": "http://localhost:8000",
+      "api_version": "v1"
+    }
+  }
+}
