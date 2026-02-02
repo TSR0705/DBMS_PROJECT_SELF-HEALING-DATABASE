@@ -1,15 +1,15 @@
 import { Sidebar } from './Sidebar';
 
-// Modern dashboard shell with glassmorphism and sophisticated layouts
+// Professional dashboard shell with clean, technical design
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen bg-slate-50">
       <Sidebar />
-      <main className="flex-1 overflow-auto relative">
-        {/* Modern content container */}
-        <div className="p-8 h-full">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 h-full overflow-auto">
-            <div className="p-8 h-full">{children}</div>
+      <main className="flex-1 overflow-auto">
+        {/* Clean, professional content area */}
+        <div className="h-full">
+          <div className="p-6 h-full">
+            {children}
           </div>
         </div>
       </main>
