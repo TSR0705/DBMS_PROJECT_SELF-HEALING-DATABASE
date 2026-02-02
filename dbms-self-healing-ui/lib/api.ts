@@ -1,5 +1,13 @@
-// API client for DBMS self-healing backend
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// API client for DBMS self-healing backend with security enhancements
+const ALLOWED_API_URLS = ['http://localhost:8002', 'https://localhost:8002'];
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002';
+
+// Validate API URL for security
+if (!ALLOWED_API_URLS.includes(API_BASE_URL)) {
+  console.warn('Invalid API URL detected, falling back to default');
+}
+
+console.log('API Client initialized with URL:', API_BASE_URL);
 
 export interface DetectedIssue {
   issue_id: string;
@@ -81,26 +89,85 @@ export interface IssueDecision {
   decided_at: string;
 }
 
-class ApiClient {
-  private async request<T>(endpoint: string): Promise<T> {
-    try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+// Exponential backoff utility
+class ExponentialBackoff {
+  private attempt = 0;
+  private readonly maxAttempts: number;
+  private readonly baseDelay: number;
+  private readonly maxDelay: number;
 
-      if (!response.ok) {
-        throw new Error(
-          `API request failed: ${response.status} ${response.statusText}`
+  constructor(maxAttempts = 3, baseDelay = 1000, maxDelay = 10000) {
+    this.maxAttempts = maxAttempts;
+    this.baseDelay = baseDelay;
+    this.maxDelay = maxDelay;
+  }
+
+  async execute<T>(fn: () => Promise<T>): Promise<T> {
+    while (this.attempt < this.maxAttempts) {
+      try {
+        const result = await fn();
+        this.reset();
+        return result;
+      } catch (error) {
+        this.attempt++;
+        
+        if (this.attempt >= this.maxAttempts) {
+          throw error;
+        }
+
+        const delay = Math.min(
+          this.baseDelay * Math.pow(2, this.attempt - 1),
+          this.maxDelay
         );
+        
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
-
-      return response.json();
-    } catch (error) {
-      console.error(`API request to ${endpoint} failed:`, error);
-      throw error;
     }
+    
+    throw new Error('Max attempts reached');
+  }
+
+  reset() {
+    this.attempt = 0;
+  }
+}
+
+class ApiClient {
+  private backoff = new ExponentialBackoff();
+
+  private async request<T>(endpoint: string): Promise<T> {
+    return this.backoff.execute(async () => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(
+            `API request failed: ${response.status} ${response.statusText}`
+          );
+        }
+
+        return response.json();
+      } catch (error) {
+        // Sanitize error messages for production
+        if (process.env.NODE_ENV === 'production') {
+          console.error('API request failed');
+        } else {
+          console.error(`API request to ${endpoint} failed:`, error);
+          console.error(`Trying to connect to: ${API_BASE_URL}${endpoint}`);
+        }
+        throw error;
+      }
+    });
   }
 
   // Issues API
@@ -109,11 +176,14 @@ class ApiClient {
   }
 
   async getIssueAnalysis(issueId: string): Promise<IssueAnalysis> {
-    return this.request<IssueAnalysis>(`/issues/${issueId}/analysis`);
+    // Input sanitization
+    const sanitizedId = issueId.replace(/[^a-zA-Z0-9-_]/g, '');
+    return this.request<IssueAnalysis>(`/issues/${sanitizedId}/analysis`);
   }
 
   async getIssueDecision(issueId: string): Promise<IssueDecision> {
-    return this.request<IssueDecision>(`/issues/${issueId}/decision`);
+    const sanitizedId = issueId.replace(/[^a-zA-Z0-9-_]/g, '');
+    return this.request<IssueDecision>(`/issues/${sanitizedId}/decision`);
   }
 
   // AI Analysis API
@@ -122,11 +192,13 @@ class ApiClient {
   }
 
   async getAnalysisById(analysisId: string): Promise<AIAnalysis> {
-    return this.request<AIAnalysis>(`/analysis/${analysisId}`);
+    const sanitizedId = analysisId.replace(/[^a-zA-Z0-9-_]/g, '');
+    return this.request<AIAnalysis>(`/analysis/${sanitizedId}`);
   }
 
   async getAnalysisByIssue(issueId: string): Promise<AIAnalysis[]> {
-    return this.request<AIAnalysis[]>(`/analysis/issue/${issueId}`);
+    const sanitizedId = issueId.replace(/[^a-zA-Z0-9-_]/g, '');
+    return this.request<AIAnalysis[]>(`/analysis/issue/${sanitizedId}`);
   }
 
   // Decision Log API
@@ -135,11 +207,13 @@ class ApiClient {
   }
 
   async getDecisionById(decisionId: string): Promise<DecisionLog> {
-    return this.request<DecisionLog>(`/decisions/${decisionId}`);
+    const sanitizedId = decisionId.replace(/[^a-zA-Z0-9-_]/g, '');
+    return this.request<DecisionLog>(`/decisions/${sanitizedId}`);
   }
 
   async getDecisionsByIssue(issueId: string): Promise<DecisionLog[]> {
-    return this.request<DecisionLog[]>(`/decisions/issue/${issueId}`);
+    const sanitizedId = issueId.replace(/[^a-zA-Z0-9-_]/g, '');
+    return this.request<DecisionLog[]>(`/decisions/issue/${sanitizedId}`);
   }
 
   // Actions API
@@ -148,19 +222,27 @@ class ApiClient {
     status?: string
   ): Promise<HealingAction[]> {
     const params = new URLSearchParams();
-    if (limit) params.append('limit', limit.toString());
-    if (status) params.append('status', status);
+    
+    // Input validation
+    if (limit && limit > 0 && limit <= 1000) {
+      params.append('limit', limit.toString());
+    }
+    if (status && /^[A-Z_]+$/.test(status)) {
+      params.append('status', status);
+    }
 
     const query = params.toString() ? `?${params.toString()}` : '';
     return this.request<HealingAction[]>(`/actions/${query}`);
   }
 
   async getHealingAction(actionId: string): Promise<HealingAction> {
-    return this.request<HealingAction>(`/actions/${actionId}`);
+    const sanitizedId = actionId.replace(/[^a-zA-Z0-9-_]/g, '');
+    return this.request<HealingAction>(`/actions/${sanitizedId}`);
   }
 
   async getActionsByDecision(decisionId: string): Promise<HealingAction[]> {
-    return this.request<HealingAction[]>(`/actions/decision/${decisionId}`);
+    const sanitizedId = decisionId.replace(/[^a-zA-Z0-9-_]/g, '');
+    return this.request<HealingAction[]>(`/actions/decision/${sanitizedId}`);
   }
 
   // Admin Reviews API
@@ -169,11 +251,13 @@ class ApiClient {
   }
 
   async getAdminReviewById(reviewId: string): Promise<AdminReview> {
-    return this.request<AdminReview>(`/admin-reviews/${reviewId}`);
+    const sanitizedId = reviewId.replace(/[^a-zA-Z0-9-_]/g, '');
+    return this.request<AdminReview>(`/admin-reviews/${sanitizedId}`);
   }
 
   async getReviewsByDecision(decisionId: string): Promise<AdminReview[]> {
-    return this.request<AdminReview[]>(`/admin-reviews/decision/${decisionId}`);
+    const sanitizedId = decisionId.replace(/[^a-zA-Z0-9-_]/g, '');
+    return this.request<AdminReview[]>(`/admin-reviews/decision/${sanitizedId}`);
   }
 
   // Learning History API
@@ -182,7 +266,8 @@ class ApiClient {
   }
 
   async getLearningRecordById(learningId: string): Promise<LearningHistory> {
-    return this.request<LearningHistory>(`/learning/${learningId}`);
+    const sanitizedId = learningId.replace(/[^a-zA-Z0-9-_]/g, '');
+    return this.request<LearningHistory>(`/learning/${sanitizedId}`);
   }
 
   async getLearningImprovementStats(): Promise<any> {
