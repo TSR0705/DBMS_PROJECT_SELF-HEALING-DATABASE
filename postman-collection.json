@@ -1,0 +1,278 @@
+{
+  "info": {
+    "name": "DBMS Self-Healing API",
+    "description": "Complete API test collection for DBMS self-healing pipeline",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Issues",
+      "item": [
+        {
+          "name": "Get All Detected Issues",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/issues/",
+              "host": ["{{base_url}}"],
+              "path": ["issues", ""]
+            },
+            "description": "Retrieve all detected issues from DBMS monitoring systems"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is JSON array', function () {",
+                  "    pm.response.to.be.json;",
+                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Issues have required fields', function () {",
+                  "    const issues = pm.response.json();",
+                  "    if (issues.length > 0) {",
+                  "        const issue = issues[0];",
+                  "        pm.expect(issue).to.have.property('issue_id');",
+                  "        pm.expect(issue).to.have.property('issue_type');",
+                  "        pm.expect(issue).to.have.property('detection_source');",
+                  "        pm.expect(issue).to.have.property('detected_at');",
+                  "        ",
+                  "        // Store first issue ID for subsequent tests",
+                  "        pm.globals.set('test_issue_id', issue.issue_id);",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Response time is acceptable', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Issue Analysis",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/issues/{{test_issue_id}}/analysis",
+              "host": ["{{base_url}}"],
+              "path": ["issues", "{{test_issue_id}}", "analysis"]
+            },
+            "description": "Retrieve AI analysis results for a specific issue"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Use stored issue ID or fallback to test ID",
+                  "const issueId = pm.globals.get('test_issue_id') || 'test-issue-001';",
+                  "pm.request.url.path[1] = issueId;"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 404', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Analysis has required fields', function () {",
+                  "        const analysis = pm.response.json();",
+                  "        pm.expect(analysis).to.have.property('issue_id');",
+                  "        pm.expect(analysis).to.have.property('predicted_issue_class');",
+                  "        pm.expect(analysis).to.have.property('severity_level');",
+                  "        pm.expect(analysis).to.have.property('confidence_score');",
+                  "        pm.expect(analysis).to.have.property('analyzed_at');",
+                  "    });",
+                  "    ",
+                  "    pm.test('Confidence score is valid', function () {",
+                  "        const analysis = pm.response.json();",
+                  "        pm.expect(analysis.confidence_score).to.be.a('number');",
+                  "        pm.expect(analysis.confidence_score).to.be.at.least(0);",
+                  "        pm.expect(analysis.confidence_score).to.be.at.most(1);",
+                  "    });",
+                  "}",
+                  "",
+                  "pm.test('Response time is acceptable', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(1500);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Issue Decision",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/issues/{{test_issue_id}}/decision",
+              "host": ["{{base_url}}"],
+              "path": ["issues", "{{test_issue_id}}", "decision"]
+            },
+            "description": "Retrieve decision made for a specific issue"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Use stored issue ID or fallback to test ID",
+                  "const issueId = pm.globals.get('test_issue_id') || 'test-issue-001';",
+                  "pm.request.url.path[1] = issueId;"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 404', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Decision has required fields', function () {",
+                  "        const decision = pm.response.json();",
+                  "        pm.expect(decision).to.have.property('issue_id');",
+                  "        pm.expect(decision).to.have.property('decision_type');",
+                  "        pm.expect(decision).to.have.property('decision_reason');",
+                  "        pm.expect(decision).to.have.property('decided_at');",
+                  "    });",
+                  "    ",
+                  "    pm.test('Decision type is valid', function () {",
+                  "        const decision = pm.response.json();",
+                  "        const validTypes = ['auto_heal', 'manual_review', 'ignore', 'escalate'];",
+                  "        pm.expect(validTypes).to.include(decision.decision_type);",
+                  "    });",
+                  "}",
+                  "",
+                  "pm.test('Response time is acceptable', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(1500);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Health Checks",
+      "item": [
+        {
+          "name": "API Health Check",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Basic health check endpoint"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response time is fast', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Database Connection Check",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/health/database",
+              "host": ["{{base_url}}"],
+              "path": ["health", "database"]
+            },
+            "description": "Check database connectivity"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Database is connected', function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('database_status');",
+                  "    pm.expect(response.database_status).to.equal('connected');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
