@@ -2,6 +2,8 @@
 
 A modern, real-time dashboard for monitoring and managing a self-healing database management system. Built with Next.js frontend and FastAPI backend.
 
+> **Note**: This project is actively maintained and ready for production use.
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -69,39 +71,24 @@ start-dev.bat
 - **Error States**: Clear error messages and connection status
 - **Real-time Updates**: Live data polling with visual indicators
 
-## 🏗️ Architecture
+## 📁 Project Structure
 
-### Backend (FastAPI)
 ```
-dbms-backend/
-├── app/
-│   ├── main.py              # FastAPI application
-│   ├── database/
-│   │   └── connection.py    # Database connection layer
-│   ├── models/
-│   │   └── schemas.py       # Pydantic data models
-│   └── routers/
-│       ├── issues.py        # Issues API endpoints
-│       ├── actions.py       # Healing actions API
-│       └── health.py        # Health check endpoints
-├── requirements.txt         # Python dependencies
-└── .env.example            # Environment configuration
-```
-
-### Frontend (Next.js)
-```
-dbms-self-healing-ui/
-├── app/
-│   ├── dashboard/          # Dashboard pages
-│   │   ├── issues/         # Issues monitoring
-│   │   └── system-health/  # Health monitoring
-│   └── layout.tsx          # Root layout
-├── components/
-│   ├── ui-dbms/           # Custom DBMS components
-│   └── layout/            # Layout components
-├── lib/
-│   └── api.ts             # API client
-└── .env.local             # Environment variables
+DBMS PROJECT/
+├── dbms-backend/              # FastAPI backend
+│   ├── app/
+│   │   ├── main.py           # Application entry point
+│   │   ├── database/         # Database connection
+│   │   ├── models/           # Data models
+│   │   └── routers/          # API routes
+│   └── requirements.txt      # Python dependencies
+├── dbms-self-healing-ui/     # Next.js frontend
+│   ├── app/                  # Page components
+│   ├── components/           # UI components
+│   └── lib/                  # Utility functions
+├── DATABASE_THINGS/          # Database schemas and documentation
+├── start-dev.bat            # Windows startup script
+└── postman-collection.json  # API testing collection
 ```
 
 ## 🔧 Configuration
@@ -153,18 +140,24 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 - **Loading States**: Skeleton loading during data fetch
 - **Retry Logic**: Automatic reconnection attempts
 
-## 🛠️ Development
+## 🛠️ Development Commands
 
-### Adding New Pages
-1. Create page component in `app/dashboard/[page-name]/page.tsx`
-2. Add route to sidebar structure in `components/layout/sidebar-structure.ts`
-3. Implement API integration using `lib/api.ts`
+### Code Quality
+```bash
+# Format code with Prettier
+cd dbms-self-healing-ui
+npm run format
 
-### Adding New API Endpoints
-1. Create router in `dbms-backend/app/routers/`
-2. Define Pydantic models in `app/models/schemas.py`
-3. Add database queries in router functions
-4. Update API client in frontend `lib/api.ts`
+# Check formatting
+npm run format:check
+```
+
+### Testing
+```bash
+# Test API endpoints manually
+# Import postman-collection.json into Postman
+# Or use the built-in Swagger UI at http://localhost:8000/docs
+```
 
 ## 🚨 Troubleshooting
 
@@ -194,6 +187,6 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 - **Error Sanitization**: No sensitive data in error messages
 - **CORS Configuration**: Restricted to development origins
 
-## 📝 License
+## 📄 License
 
-This project is part of a DBMS course project and is intended for educational purposes.
+This project is developed as part of academic coursework and is available for educational and research purposes. All rights reserved.
