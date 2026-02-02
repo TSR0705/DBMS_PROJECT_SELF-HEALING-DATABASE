@@ -1,0 +1,19 @@
+{
+  "enabled": true,
+  "name": "DBMS API Postman Testing",
+  "description": "Monitors DBMS backend API changes and automatically runs Postman collection tests to validate functionality",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "dbms-backend/**/*.py",
+      "dbms-backend/requirements.txt",
+      "dbms-backend/.env*",
+      "dbms-backend/app/**/*.py"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "DBMS backend API code has been modified. Please retrieve the contents of the .postman.json file. If the file does not exist or is empty, create a Postman collection for the DBMS API. If it exists, get the collection ID and run the collection, showing me the results and propose fixes for any errors found."
+  }
+}
