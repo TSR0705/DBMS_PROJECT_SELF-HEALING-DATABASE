@@ -5,7 +5,7 @@ import { Section } from '@/components/ui-dbms/Section';
 import { StatsCard } from '@/components/ui-dbms/StatsCard';
 import { Badge } from '@/components/ui/badge';
 import { useRealtimeData } from '@/lib/realtime-service';
-import { DetectedIssue } from '@/lib/api';
+import type { DetectedIssue } from '@/lib/api';
 
 // Enhanced column definitions for real API data with modern styling
 const issueColumns: DataTableColumn<DetectedIssue>[] = [
@@ -37,7 +37,7 @@ const issueColumns: DataTableColumn<DetectedIssue>[] = [
                 : 'bg-blue-400'
           }`}
         ></div>
-        <span className="font-semibold">{value.replace('_', ' ')}</span>
+        <span className="font-semibold">{typeof value === 'string' ? value.replace('_', ' ') : String(value)}</span>
       </div>
     ),
   },
@@ -73,10 +73,10 @@ const issueColumns: DataTableColumn<DetectedIssue>[] = [
     render: value => (
       <div className="text-right">
         <div className="text-xs font-medium text-slate-900">
-          {new Date(value).toLocaleDateString()}
+          {typeof value === 'string' ? new Date(value).toLocaleDateString() : 'N/A'}
         </div>
         <div className="text-xs text-slate-500">
-          {new Date(value).toLocaleTimeString()}
+          {typeof value === 'string' ? new Date(value).toLocaleTimeString() : 'N/A'}
         </div>
       </div>
     ),
