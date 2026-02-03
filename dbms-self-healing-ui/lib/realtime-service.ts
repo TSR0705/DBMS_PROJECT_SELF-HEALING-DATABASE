@@ -2,33 +2,9 @@
 // Ensures all components receive live data from the backend
 
 import { apiClient } from './api';
-
-export interface SystemMetrics {
-  totalIssues: number;
-  totalAnalysis: number;
-  totalDecisions: number;
-  totalActions: number;
-  totalReviews: number;
-  totalLearning: number;
-  isConnected: boolean;
-  lastUpdate: Date;
-  uptime: string;
-  autoHealSuccessRate: number;
-  issuesResolved: number;
-  detectionTime: string;
-  connectionStatus: 'connected' | 'disconnected' | 'error' | 'connecting';
-  lastError?: string;
-}
-
-export interface RealtimeData {
-  systemMetrics: SystemMetrics;
-  recentIssues: DetectedIssue[];
-  recentActions: HealingAction[];
-  recentAnalysis: AIAnalysis[];
-  recentDecisions: DecisionLog[];
-  recentLearning: LearningHistory[];
-  recentReviews: AdminReview[];
-}
+import type {
+  RealtimeData
+} from '../types/dashboard';
 
 class RealtimeService {
   private data: RealtimeData | null = null;
