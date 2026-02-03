@@ -19,25 +19,38 @@ export function StatsCard({
     neutral: 'text-slate-600',
   };
 
+  const trendIcons = {
+    up: '↗',
+    down: '↘',
+    neutral: '→',
+  };
+
   return (
     <div
-      className={`bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-white/20 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${className}`}
+      className={`bg-white border border-slate-200 p-6 hover:shadow-md transition-shadow duration-200 ${className}`}
     >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-slate-600 mb-1">{title}</p>
-          <p className="text-3xl font-bold text-slate-900">{value}</p>
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-slate-600 mb-2">{title}</p>
+          <p className="text-2xl font-bold text-slate-900 font-mono">{value}</p>
           {subtitle && (
-            <p
-              className={`text-sm mt-1 ${trend ? trendColors[trend] : 'text-slate-500'}`}
-            >
-              {subtitle}
-            </p>
+            <div className="flex items-center mt-2">
+              {trend && trend !== 'neutral' && (
+                <span className={`text-sm mr-1 ${trendColors[trend]}`}>
+                  {trendIcons[trend]}
+                </span>
+              )}
+              <p
+                className={`text-sm ${trend ? trendColors[trend] : 'text-slate-500'}`}
+              >
+                {subtitle}
+              </p>
+            </div>
           )}
         </div>
-        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
-          <div className="w-6 h-6 bg-white rounded opacity-80" />
-        </div>
+
+        {/* Simple status indicator */}
+        <div className="w-3 h-3 bg-slate-300 rounded-full"></div>
       </div>
     </div>
   );
