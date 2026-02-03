@@ -12,7 +12,7 @@ export interface DataTableColumn<T> {
   key: keyof T;
   header: string;
   className?: string;
-  render?: (value: unknown, row: T, index: number) => React.ReactNode;
+  render?: (value: T[keyof T], row: T, index: number) => React.ReactNode;
 }
 
 // Props for professional DBMS data table component
@@ -24,7 +24,7 @@ interface DataTableProps<T> {
 }
 
 // Professional data table with clean, technical design
-export function DataTable<T extends Record<string, unknown>>({
+export function DataTable<T extends Record<string, string | number | boolean | Date | null>>({
   columns,
   data,
   className = '',

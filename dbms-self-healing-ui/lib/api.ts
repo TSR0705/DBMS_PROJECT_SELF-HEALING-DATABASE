@@ -73,7 +73,60 @@ export interface HealthCheck {
   timestamp: string;
 }
 
-// Legacy interfaces for backward compatibility
+// API Response interfaces for type safety
+interface APIAnalysisResponse {
+  analysis_id: string;
+  issue_id: string;
+  analyzed_at: string;
+  confidence_score: number | string;
+  predicted_issue_class: string;
+  severity_level: string;
+  risk_type: string;
+  model_version: string;
+}
+
+interface APIDecisionResponse {
+  decision_id: string;
+  issue_id: string;
+  decision_type: string;
+  decision_reason: string;
+  confidence_at_decision: number | string;
+  decided_at: string;
+}
+
+interface APILearningResponse {
+  learning_id: string;
+  issue_type: string;
+  action_type: string;
+  outcome: string;
+  confidence_before: number | string;
+  confidence_after: number | string;
+  recorded_at: string;
+}
+
+interface DatabaseHealthResponse {
+  status: string;
+  database_stats: Record<string, number>;
+  timestamp: string;
+}
+
+interface LearningStatsResponse {
+  learning_stats: Array<{
+    issue_type: string;
+    action_type: string;
+    total_records: number;
+    avg_improvement: number;
+    success_rate: number;
+  }>;
+}
+
+interface ActionStatsResponse {
+  action_stats: Array<{
+    execution_status: string;
+    count: number;
+    action_type: string;
+  }>;
+}
 export interface IssueAnalysis {
   issue_id: string;
   predicted_issue_class: string;
@@ -148,9 +201,9 @@ class ExponentialBackoff {
 class ApiClient {
   private backoff = new ExponentialBackoff();
 
-  // Data processing helpers
-  private processAnalysisData(data: unknown[]): AIAnalysis[] {
-    return (data as AIAnalysis[]).map(item => ({
+  // Data processing helpers with proper types
+  private processAnalysisData(data: APIAnalysisResponse[]): AIAnalysis[] {
+    return data.map(item => ({
       ...item,
       confidence_score:
         typeof item.confidence_score === 'string'
@@ -159,8 +212,8 @@ class ApiClient {
     }));
   }
 
-  private processDecisionData(data: unknown[]): DecisionLog[] {
-    return (data as DecisionLog[]).map(item => ({
+  private processDecisionData(data: APIDecisionResponse[]): DecisionLog[] {
+    return data.map(item => ({
       ...item,
       confidence_at_decision:
         typeof item.confidence_at_decision === 'string'
@@ -169,8 +222,8 @@ class ApiClient {
     }));
   }
 
-  private processLearningData(data: unknown[]): LearningHistory[] {
-    return (data as LearningHistory[]).map(item => ({
+  private processLearningData(data: APILearningResponse[]): LearningHistory[] {
+    return data.map(item => ({
       ...item,
       confidence_before:
         typeof item.confidence_before === 'string'
@@ -247,37 +300,37 @@ class ApiClient {
 
   // AI Analysis API
   async getAllAnalysis(): Promise<AIAnalysis[]> {
-    const data = await this.request<unknown[]>('/analysis/');
+    const data = await this.request<APIAnalysisResponse[]>('/analysis/');
     return this.processAnalysisData(data);
   }
 
   async getAnalysisById(analysisId: string): Promise<AIAnalysis> {
     const sanitizedId = analysisId.replace(/[^a-zA-Z0-9-_]/g, '');
-    const data = await this.request<unknown>(`/analysis/${sanitizedId}`);
+    const data = await this.request<APIAnalysisResponse>(`/analysis/${sanitizedId}`);
     return this.processAnalysisData([data])[0];
   }
 
   async getAnalysisByIssue(issueId: string): Promise<AIAnalysis[]> {
     const sanitizedId = issueId.replace(/[^a-zA-Z0-9-_]/g, '');
-    const data = await this.request<unknown[]>(`/analysis/issue/${sanitizedId}`);
+    const data = await this.request<APIAnalysisResponse[]>(`/analysis/issue/${sanitizedId}`);
     return this.processAnalysisData(data);
   }
 
   // Decision Log API
   async getAllDecisions(): Promise<DecisionLog[]> {
-    const data = await this.request<unknown[]>('/decisions/');
+    const data = await this.request<APIDecisionResponse[]>('/decisions/');
     return this.processDecisionData(data);
   }
 
   async getDecisionById(decisionId: string): Promise<DecisionLog> {
     const sanitizedId = decisionId.replace(/[^a-zA-Z0-9-_]/g, '');
-    const data = await this.request<unknown>(`/decisions/${sanitizedId}`);
+    const data = await this.request<APIDecisionResponse>(`/decisions/${sanitizedId}`);
     return this.processDecisionData([data])[0];
   }
 
   async getDecisionsByIssue(issueId: string): Promise<DecisionLog[]> {
     const sanitizedId = issueId.replace(/[^a-zA-Z0-9-_]/g, '');
-    const data = await this.request<unknown[]>(`/decisions/issue/${sanitizedId}`);
+    const data = await this.request<APIDecisionResponse[]>(`/decisions/issue/${sanitizedId}`);
     return this.processDecisionData(data);
   }
 
@@ -329,18 +382,18 @@ class ApiClient {
 
   // Learning History API
   async getAllLearningHistory(): Promise<LearningHistory[]> {
-    const data = await this.request<unknown[]>('/learning/');
+    const data = await this.request<APILearningResponse[]>('/learning/');
     return this.processLearningData(data);
   }
 
   async getLearningRecordById(learningId: string): Promise<LearningHistory> {
     const sanitizedId = learningId.replace(/[^a-zA-Z0-9-_]/g, '');
-    const data = await this.request<unknown>(`/learning/${sanitizedId}`);
+    const data = await this.request<APILearningResponse>(`/learning/${sanitizedId}`);
     return this.processLearningData([data])[0];
   }
 
-  async getLearningImprovementStats(): Promise<{learning_stats: unknown[]}> {
-    return this.request<{learning_stats: unknown[]}>('/learning/stats/improvement');
+  async getLearningImprovementStats(): Promise<LearningStatsResponse> {
+    return this.request<LearningStatsResponse>('/learning/stats/improvement');
   }
 
   // Health API
@@ -348,13 +401,13 @@ class ApiClient {
     return this.request<HealthCheck>('/health/');
   }
 
-  async getDatabaseHealth(): Promise<{status: string; database_stats: Record<string, number>}> {
-    return this.request<{status: string; database_stats: Record<string, number>}>('/health/database');
+  async getDatabaseHealth(): Promise<DatabaseHealthResponse> {
+    return this.request<DatabaseHealthResponse>('/health/database');
   }
 
   // Statistics APIs
-  async getActionStats(): Promise<{action_stats: unknown[]}> {
-    return this.request<{action_stats: unknown[]}>('/actions/stats/summary');
+  async getActionStats(): Promise<ActionStatsResponse> {
+    return this.request<ActionStatsResponse>('/actions/stats/summary');
   }
 }
 

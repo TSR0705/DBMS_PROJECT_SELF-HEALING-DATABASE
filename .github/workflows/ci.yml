@@ -278,13 +278,13 @@ jobs:
       - name: SQL Security Validation
         run: |
           # Check for potentially dangerous SQL patterns in schema files
-          if grep -i "truncate\|drop.*without.*if.*exists" DATABASE_THINGS/*.sql; then
+          if grep -i "truncate\|drop.*database" DATABASE_THINGS/*.sql; then
             echo "❌ Potentially dangerous SQL operations found"
             exit 1
           fi
           
-          # Ensure all DROP statements use IF EXISTS for safety
-          if grep -i "^drop table" DATABASE_THINGS/schema_refactored.sql | grep -v "if exists"; then
+          # Check for DROP statements without IF EXISTS (more precise regex)
+          if grep -i "^drop table" DATABASE_THINGS/schema_refactored.sql | grep -v -i "if exists"; then
             echo "❌ DROP statements should use IF EXISTS for safety"
             exit 1
           fi
