@@ -8,9 +8,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <main className="flex-1 overflow-auto">
         {/* Clean, professional content area */}
         <div className="h-full">
-          <div className="p-6 h-full">
-            {children}
-          </div>
+          <div className="p-6 h-full">{children}</div>
         </div>
       </main>
     </div>
