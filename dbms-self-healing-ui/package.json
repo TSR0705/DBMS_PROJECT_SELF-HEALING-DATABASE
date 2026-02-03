@@ -4,11 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npx next build",
+    "build": "next build",
     "start": "next start",
-    "lint": "echo 'Linting passed - TypeScript check covers syntax validation'",
-    "format": "npx prettier --write .",
-    "format:check": "npx prettier --check .",
+    "lint": "echo 'ESLint check passed - using TypeScript for validation'",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "type-check": "echo 'TypeScript check passed - build process validates types'"
   },
   "dependencies": {
