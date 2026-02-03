@@ -5,7 +5,7 @@ import { Section } from '@/components/ui-dbms/Section';
 import { StatsCard } from '@/components/ui-dbms/StatsCard';
 import { StatusBadge } from '@/components/ui-dbms/StatusBadge';
 import { useRealtimeData } from '@/lib/realtime-service';
-import { HealingAction } from '@/lib/api';
+import type { HealingAction } from '@/lib/api';
 
 export default function HealingActionsPage() {
   const { data, loading, refresh } = useRealtimeData();
