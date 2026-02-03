@@ -1,58 +1,48 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { DataTable, DataTableColumn } from '@/components/ui-dbms/DataTable';
 import { Section } from '@/components/ui-dbms/Section';
 import { StatsCard } from '@/components/ui-dbms/StatsCard';
 import { StatusBadge } from '@/components/ui-dbms/StatusBadge';
-import { apiClient, AIAnalysis } from '@/lib/api';
+import { useRealtimeData } from '@/lib/realtime-service';
+import { AIAnalysis } from '@/lib/api';
 
 export default function AIAnalysisPage() {
-  const [analyses, setAnalyses] = useState<AIAnalysis[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalAnalyses: 0,
-    highSeverity: 0,
-    avgConfidence: 0,
-    latestModel: 'Unknown',
-  });
+  const { data, loading, refresh } = useRealtimeData();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const analysisData = await apiClient.getAllAnalysis();
-        setAnalyses(analysisData);
+  if (loading || !data) {
+    return (
+      <div className="space-y-8">
+        <div className="animate-pulse space-y-6">
+          <div className="h-20 bg-slate-200 rounded"></div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-40 bg-slate-200 rounded"></div>
+            ))}
+          </div>
+          <div className="h-96 bg-slate-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
 
-        // Calculate stats
-        const highSeverityCount = analysisData.filter(
-          a => a.severity_level === 'HIGH'
-        ).length;
-        const avgConf =
-          analysisData.length > 0
-            ? analysisData.reduce((sum, a) => sum + a.confidence_score, 0) /
-              analysisData.length
-            : 0;
-        const latestModel =
-          analysisData.length > 0 ? analysisData[0].model_version : 'Unknown';
+  const { recentAnalysis, systemMetrics } = data;
 
-        setStats({
-          totalAnalyses: analysisData.length,
-          highSeverity: highSeverityCount,
-          avgConfidence: Math.round(avgConf * 100),
-          latestModel,
-        });
-      } catch (error) {
-        console.error('Error fetching analysis data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Calculate real stats from data
+  const highSeverityCount = recentAnalysis.filter(
+    a => a.severity_level === 'HIGH'
+  ).length;
+  const avgConf = recentAnalysis.length > 0
+    ? recentAnalysis.reduce((sum, a) => sum + a.confidence_score, 0) / recentAnalysis.length
+    : 0;
+  const latestModel = recentAnalysis.length > 0 ? recentAnalysis[0].model_version : 'Unknown';
 
-    fetchData();
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  const stats = {
+    totalAnalyses: recentAnalysis.length,
+    highSeverity: highSeverityCount,
+    avgConfidence: Math.round(avgConf * 100),
+    latestModel,
+  };
 
   const columns: DataTableColumn<AIAnalysis>[] = [
     {
@@ -141,10 +131,28 @@ export default function AIAnalysisPage() {
     <div className="space-y-8">
       {/* Page Header */}
       <div className="border-b border-slate-200 pb-6">
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">AI Analysis</h1>
-        <p className="text-slate-600">
-          Machine learning analysis results for detected database issues
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">AI Analysis</h1>
+            <p className="text-slate-600">
+              Machine learning analysis results for detected database issues
+            </p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${systemMetrics.isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+              <span className="text-sm text-slate-600">
+                {systemMetrics.isConnected ? 'Live Data' : 'Offline'}
+              </span>
+            </div>
+            <button
+              onClick={refresh}
+              className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+            >
+              Refresh
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -180,7 +188,7 @@ export default function AIAnalysisPage() {
         title="Analysis Results"
         description="Detailed AI analysis results for each detected issue"
       >
-        <DataTable columns={columns} data={analyses} loading={loading} />
+        <DataTable columns={columns} data={recentAnalysis} loading={loading} />
       </Section>
 
       {/* Analysis Insights */}
@@ -191,11 +199,11 @@ export default function AIAnalysisPage() {
         >
           <div className="space-y-4">
             {['HIGH', 'MEDIUM', 'LOW'].map(severity => {
-              const count = analyses.filter(
+              const count = recentAnalysis.filter(
                 a => a.severity_level === severity
               ).length;
               const percentage =
-                analyses.length > 0 ? (count / analyses.length) * 100 : 0;
+                recentAnalysis.length > 0 ? (count / recentAnalysis.length) * 100 : 0;
 
               return (
                 <div
@@ -243,13 +251,13 @@ export default function AIAnalysisPage() {
           description="Categories of risks identified by AI"
         >
           <div className="space-y-4">
-            {Array.from(new Set(analyses.map(a => a.risk_type))).map(
+            {Array.from(new Set(recentAnalysis.map(a => a.risk_type))).map(
               riskType => {
-                const count = analyses.filter(
+                const count = recentAnalysis.filter(
                   a => a.risk_type === riskType
                 ).length;
                 const avgConfidence =
-                  analyses
+                  recentAnalysis
                     .filter(a => a.risk_type === riskType)
                     .reduce((sum, a) => sum + a.confidence_score, 0) / count;
 
