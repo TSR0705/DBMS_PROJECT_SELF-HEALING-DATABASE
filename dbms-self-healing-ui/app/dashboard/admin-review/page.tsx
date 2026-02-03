@@ -5,7 +5,7 @@ import { Section } from '@/components/ui-dbms/Section';
 import { StatsCard } from '@/components/ui-dbms/StatsCard';
 import { StatusBadge } from '@/components/ui-dbms/StatusBadge';
 import { useRealtimeData } from '@/lib/realtime-service';
-import { AdminReview } from '@/lib/api';
+import type { AdminReview } from '@/lib/api';
 
 export default function AdminReviewPage() {
   const { data, loading, refresh } = useRealtimeData();
@@ -73,7 +73,7 @@ export default function AdminReviewPage() {
             : value === 'REJECTED'
               ? 'error'
               : 'warning';
-        return <StatusBadge status={value} variant={variant} />;
+        return <StatusBadge status={String(value)} variant={variant} />;
       },
     },
     {
@@ -83,9 +83,9 @@ export default function AdminReviewPage() {
         <div className="max-w-xs">
           <p
             className="text-sm text-slate-700 truncate"
-            title={value || 'No comment'}
+            title={String(value || 'No comment')}
           >
-            {value || 'No comment provided'}
+            {String(value || 'No comment provided')}
           </p>
         </div>
       ),
@@ -108,7 +108,7 @@ export default function AdminReviewPage() {
       header: 'Reviewed At',
       render: value => (
         <span className="text-sm text-slate-500">
-          {new Date(value).toLocaleString()}
+          {typeof value === 'string' ? new Date(value).toLocaleString() : 'N/A'}
         </span>
       ),
     },
