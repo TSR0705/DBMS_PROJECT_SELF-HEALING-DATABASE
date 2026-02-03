@@ -5,7 +5,7 @@ interface SectionProps {
   className?: string;
 }
 
-// Console section container - clear framing without card aesthetics
+// Professional section container with clean, technical design
 export function Section({
   title,
   description,
@@ -13,18 +13,18 @@ export function Section({
   className = '',
 }: SectionProps) {
   return (
-    <section className={`mt-8 first:mt-0 ${className}`}>
-      <header className="mb-4">
-        <h2 className="text-lg font-medium text-neutral-900 mb-1">{title}</h2>
+    <section className={`mb-8 ${className}`}>
+      <header className="mb-6">
+        <h2 className="text-xl font-bold text-slate-900 mb-2">{title}</h2>
         {description && (
-          <p className="text-sm text-neutral-600 leading-relaxed">
+          <p className="text-sm text-slate-600 leading-relaxed">
             {description}
           </p>
         )}
-        <div className="mt-3 h-px bg-neutral-200" />
+        <div className="mt-4 h-px bg-slate-200" />
       </header>
 
-      <div className="mt-6">{children}</div>
+      <div>{children}</div>
     </section>
   );
 }
