@@ -1,4 +1,14 @@
 // API client for DBMS self-healing backend with security enhancements
+import type {
+  DetectedIssue,
+  AIAnalysis,
+  DecisionLog,
+  HealingAction,
+  AdminReview,
+  LearningHistory,
+  HealthCheck
+} from '../types/dashboard';
+
 const ALLOWED_API_URLS = ['http://localhost:8002', 'https://localhost:8002'];
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002';
 
@@ -8,70 +18,6 @@ if (!ALLOWED_API_URLS.includes(API_BASE_URL)) {
 }
 
 console.log('API Client initialized with URL:', API_BASE_URL);
-
-export interface DetectedIssue {
-  issue_id: string;
-  issue_type: string;
-  detection_source: string;
-  raw_metric_value: number | null;
-  raw_metric_unit: string | null;
-  detected_at: string;
-}
-
-export interface AIAnalysis {
-  analysis_id: string;
-  issue_id: string;
-  predicted_issue_class: string;
-  severity_level: string;
-  risk_type: string;
-  confidence_score: number;
-  model_version: string;
-  analyzed_at: string;
-}
-
-export interface DecisionLog {
-  decision_id: string;
-  issue_id: string;
-  decision_type: string;
-  decision_reason: string;
-  confidence_at_decision: number;
-  decided_at: string;
-}
-
-export interface HealingAction {
-  action_id: string;
-  decision_id: string;
-  action_type: string;
-  execution_mode: string;
-  executed_by: string;
-  execution_status: string;
-  executed_at: string;
-}
-
-export interface AdminReview {
-  review_id: string;
-  decision_id: string;
-  admin_action: string;
-  admin_comment: string | null;
-  override_flag: boolean;
-  reviewed_at: string;
-}
-
-export interface LearningHistory {
-  learning_id: string;
-  issue_type: string;
-  action_type: string;
-  outcome: string;
-  confidence_before: number;
-  confidence_after: number;
-  recorded_at: string;
-}
-
-export interface HealthCheck {
-  status: string;
-  database_connected: boolean;
-  timestamp: string;
-}
 
 // API Response interfaces for type safety
 interface APIAnalysisResponse {
@@ -412,3 +358,6 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient();
+
+// Re-export types for component usage
+export type { DetectedIssue, AIAnalysis, DecisionLog, HealingAction, AdminReview, LearningHistory } from '../types/dashboard';
