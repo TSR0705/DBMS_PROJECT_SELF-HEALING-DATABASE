@@ -1,0 +1,22 @@
+# CODEOWNERS file for DBMS project
+# Ensures proper review for critical components
+
+# Global ownership - require review for all changes
+* @project-maintainers
+
+# Database schema changes require special attention
+DATABASE_THINGS/ @database-team @project-maintainers
+
+# CI/CD pipeline changes require DevOps review
+.github/ @devops-team @project-maintainers
+
+# Backend API changes
+dbms-backend/ @backend-team @project-maintainers
+
+# Frontend changes
+dbms-self-healing-ui/ @frontend-team @project-maintainers
+
+# Security-sensitive files
+*.env.example @security-team @project-maintainers
+requirements.txt @security-team @backend-team
+package.json @security-team @frontend-team
