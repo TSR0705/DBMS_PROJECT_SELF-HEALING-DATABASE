@@ -1,0 +1,46 @@
+# Flake8 configuration for Python code quality
+[flake8]
+# Maximum line length (academic standard)
+max-line-length = 127
+
+# Maximum cyclomatic complexity
+max-complexity = 10
+
+# Files and directories to exclude from linting
+exclude = 
+    .git,
+    __pycache__,
+    .env,
+    venv/,
+    .venv/,
+    build/,
+    dist/,
+    *.egg-info/
+
+# Error codes to ignore (be conservative for academic work)
+ignore = 
+    # Line too long (handled by max-line-length)
+    E501,
+    # Line break before binary operator (conflicts with black)
+    W503
+
+# Error codes to always check (critical issues)
+select = 
+    # Python syntax errors
+    E9,
+    # Import errors
+    F63,
+    F7,
+    F82
+
+# Show source code for each error
+show-source = True
+
+# Show statistics at the end
+statistics = True
+
+# Count errors and warnings
+count = True
+
+# Format for error messages
+format = %(path)s:%(row)d:%(col)d: %(code)s %(text)s
