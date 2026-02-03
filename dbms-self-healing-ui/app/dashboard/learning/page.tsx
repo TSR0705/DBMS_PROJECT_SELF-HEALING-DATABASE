@@ -5,7 +5,7 @@ import { Section } from '@/components/ui-dbms/Section';
 import { StatsCard } from '@/components/ui-dbms/StatsCard';
 import { StatusBadge } from '@/components/ui-dbms/StatusBadge';
 import { useRealtimeData } from '@/lib/realtime-service';
-import { LearningHistory } from '@/lib/api';
+import type { LearningHistory } from '@/lib/api';
 
 export default function LearningPage() {
   const { data, loading, refresh } = useRealtimeData();
@@ -88,7 +88,7 @@ export default function LearningPage() {
             : value === 'FAILED'
               ? 'error'
               : 'warning';
-        return <StatusBadge status={value} variant={variant} />;
+        return <StatusBadge status={String(value)} variant={variant} />;
       },
     },
     {
@@ -99,11 +99,11 @@ export default function LearningPage() {
           <div className="w-12 bg-slate-200 rounded-full h-2">
             <div
               className="bg-red-400 h-2 rounded-full"
-              style={{ width: `${value * 100}%` }}
+              style={{ width: `${typeof value === 'number' ? value * 100 : 0}%` }}
             />
           </div>
           <span className="text-xs font-medium">
-            {Math.round(value * 100)}%
+            {typeof value === 'number' ? Math.round(value * 100) : 0}%
           </span>
         </div>
       ),
@@ -116,11 +116,11 @@ export default function LearningPage() {
           <div className="w-12 bg-slate-200 rounded-full h-2">
             <div
               className="bg-green-500 h-2 rounded-full"
-              style={{ width: `${value * 100}%` }}
+              style={{ width: `${typeof value === 'number' ? value * 100 : 0}%` }}
             />
           </div>
           <span className="text-xs font-medium">
-            {Math.round(value * 100)}%
+            {typeof value === 'number' ? Math.round(value * 100) : 0}%
           </span>
         </div>
       ),
