@@ -149,8 +149,8 @@ class ApiClient {
   private backoff = new ExponentialBackoff();
 
   // Data processing helpers
-  private processAnalysisData(data: any[]): AIAnalysis[] {
-    return data.map(item => ({
+  private processAnalysisData(data: unknown[]): AIAnalysis[] {
+    return (data as AIAnalysis[]).map(item => ({
       ...item,
       confidence_score:
         typeof item.confidence_score === 'string'
@@ -159,8 +159,8 @@ class ApiClient {
     }));
   }
 
-  private processDecisionData(data: any[]): DecisionLog[] {
-    return data.map(item => ({
+  private processDecisionData(data: unknown[]): DecisionLog[] {
+    return (data as DecisionLog[]).map(item => ({
       ...item,
       confidence_at_decision:
         typeof item.confidence_at_decision === 'string'
@@ -169,8 +169,8 @@ class ApiClient {
     }));
   }
 
-  private processLearningData(data: any[]): LearningHistory[] {
-    return data.map(item => ({
+  private processLearningData(data: unknown[]): LearningHistory[] {
+    return (data as LearningHistory[]).map(item => ({
       ...item,
       confidence_before:
         typeof item.confidence_before === 'string'
@@ -247,37 +247,37 @@ class ApiClient {
 
   // AI Analysis API
   async getAllAnalysis(): Promise<AIAnalysis[]> {
-    const data = await this.request<any[]>('/analysis/');
+    const data = await this.request<unknown[]>('/analysis/');
     return this.processAnalysisData(data);
   }
 
   async getAnalysisById(analysisId: string): Promise<AIAnalysis> {
     const sanitizedId = analysisId.replace(/[^a-zA-Z0-9-_]/g, '');
-    const data = await this.request<any>(`/analysis/${sanitizedId}`);
+    const data = await this.request<unknown>(`/analysis/${sanitizedId}`);
     return this.processAnalysisData([data])[0];
   }
 
   async getAnalysisByIssue(issueId: string): Promise<AIAnalysis[]> {
     const sanitizedId = issueId.replace(/[^a-zA-Z0-9-_]/g, '');
-    const data = await this.request<any[]>(`/analysis/issue/${sanitizedId}`);
+    const data = await this.request<unknown[]>(`/analysis/issue/${sanitizedId}`);
     return this.processAnalysisData(data);
   }
 
   // Decision Log API
   async getAllDecisions(): Promise<DecisionLog[]> {
-    const data = await this.request<any[]>('/decisions/');
+    const data = await this.request<unknown[]>('/decisions/');
     return this.processDecisionData(data);
   }
 
   async getDecisionById(decisionId: string): Promise<DecisionLog> {
     const sanitizedId = decisionId.replace(/[^a-zA-Z0-9-_]/g, '');
-    const data = await this.request<any>(`/decisions/${sanitizedId}`);
+    const data = await this.request<unknown>(`/decisions/${sanitizedId}`);
     return this.processDecisionData([data])[0];
   }
 
   async getDecisionsByIssue(issueId: string): Promise<DecisionLog[]> {
     const sanitizedId = issueId.replace(/[^a-zA-Z0-9-_]/g, '');
-    const data = await this.request<any[]>(`/decisions/issue/${sanitizedId}`);
+    const data = await this.request<unknown[]>(`/decisions/issue/${sanitizedId}`);
     return this.processDecisionData(data);
   }
 
@@ -329,18 +329,18 @@ class ApiClient {
 
   // Learning History API
   async getAllLearningHistory(): Promise<LearningHistory[]> {
-    const data = await this.request<any[]>('/learning/');
+    const data = await this.request<unknown[]>('/learning/');
     return this.processLearningData(data);
   }
 
   async getLearningRecordById(learningId: string): Promise<LearningHistory> {
     const sanitizedId = learningId.replace(/[^a-zA-Z0-9-_]/g, '');
-    const data = await this.request<any>(`/learning/${sanitizedId}`);
+    const data = await this.request<unknown>(`/learning/${sanitizedId}`);
     return this.processLearningData([data])[0];
   }
 
-  async getLearningImprovementStats(): Promise<any> {
-    return this.request<any>('/learning/stats/improvement');
+  async getLearningImprovementStats(): Promise<{learning_stats: unknown[]}> {
+    return this.request<{learning_stats: unknown[]}>('/learning/stats/improvement');
   }
 
   // Health API
@@ -348,13 +348,13 @@ class ApiClient {
     return this.request<HealthCheck>('/health/');
   }
 
-  async getDatabaseHealth(): Promise<any> {
-    return this.request<any>('/health/database');
+  async getDatabaseHealth(): Promise<{status: string; database_stats: Record<string, number>}> {
+    return this.request<{status: string; database_stats: Record<string, number>}>('/health/database');
   }
 
   // Statistics APIs
-  async getActionStats(): Promise<any> {
-    return this.request<any>('/actions/stats/summary');
+  async getActionStats(): Promise<{action_stats: unknown[]}> {
+    return this.request<{action_stats: unknown[]}>('/actions/stats/summary');
   }
 }
 

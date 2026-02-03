@@ -4,10 +4,15 @@ import { useState } from 'react';
 import { apiClient } from '@/lib/api';
 
 export default function TestAPI() {
-  const [results, setResults] = useState<Record<string, any>>({});
+  const [results, setResults] = useState<Record<string, {
+    status: 'SUCCESS' | 'ERROR';
+    data?: unknown;
+    error?: string;
+    timestamp: string;
+  }>>({});
   const [loading, setLoading] = useState<Record<string, boolean>>({});
 
-  const testEndpoint = async (name: string, testFn: () => Promise<any>) => {
+  const testEndpoint = async (name: string, testFn: () => Promise<unknown>) => {
     setLoading(prev => ({ ...prev, [name]: true }));
     try {
       const result = await testFn();

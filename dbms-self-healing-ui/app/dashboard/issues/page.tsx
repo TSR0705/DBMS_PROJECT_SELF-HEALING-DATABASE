@@ -111,7 +111,6 @@ export default function DetectedIssues() {
   const detectionSources = Array.from(
     new Set(recentIssues.map(i => i.detection_source))
   );
-  const issueTypes = Array.from(new Set(recentIssues.map(i => i.issue_type)));
 
   return (
     <div className="space-y-8 animate-fade-in">

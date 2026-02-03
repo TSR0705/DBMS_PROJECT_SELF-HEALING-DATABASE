@@ -22,12 +22,12 @@ export interface SystemMetrics {
 
 export interface RealtimeData {
   systemMetrics: SystemMetrics;
-  recentIssues: any[];
-  recentActions: any[];
-  recentAnalysis: any[];
-  recentDecisions: any[];
-  recentLearning: any[];
-  recentReviews: any[];
+  recentIssues: DetectedIssue[];
+  recentActions: HealingAction[];
+  recentAnalysis: AIAnalysis[];
+  recentDecisions: DecisionLog[];
+  recentLearning: LearningHistory[];
+  recentReviews: AdminReview[];
 }
 
 class RealtimeService {
@@ -304,11 +304,14 @@ export function useRealtimeData(): {
       setLoading(false);
     });
 
-    // Get initial data if available
+    // Get initial data if available - use callback to avoid direct setState
     const currentData = realtimeService.getCurrentData();
     if (currentData) {
-      setData(currentData);
-      setLoading(false);
+      // Use setTimeout to avoid direct setState in effect
+      setTimeout(() => {
+        setData(currentData);
+        setLoading(false);
+      }, 0);
     }
 
     return unsubscribe;
