@@ -1,61 +1,50 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { DataTable, DataTableColumn } from '@/components/ui-dbms/DataTable';
 import { Section } from '@/components/ui-dbms/Section';
 import { StatsCard } from '@/components/ui-dbms/StatsCard';
 import { StatusBadge } from '@/components/ui-dbms/StatusBadge';
-import { apiClient, DecisionLog } from '@/lib/api';
+import { useRealtimeData } from '@/lib/realtime-service';
+import { DecisionLog } from '@/lib/api';
 
 export default function DecisionsPage() {
-  const [decisions, setDecisions] = useState<DecisionLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalDecisions: 0,
-    autoHeal: 0,
-    adminReview: 0,
-    avgConfidence: 0,
-  });
+  const { data, loading, refresh } = useRealtimeData();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const decisionData = await apiClient.getAllDecisions();
-        setDecisions(decisionData);
+  if (loading || !data) {
+    return (
+      <div className="space-y-8">
+        <div className="animate-pulse space-y-6">
+          <div className="h-20 bg-slate-200 rounded"></div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-40 bg-slate-200 rounded"></div>
+            ))}
+          </div>
+          <div className="h-96 bg-slate-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
 
-        // Calculate stats
-        const autoHealCount = decisionData.filter(
-          d => d.decision_type === 'AUTO_HEAL'
-        ).length;
-        const adminReviewCount = decisionData.filter(
-          d => d.decision_type === 'ADMIN_REVIEW'
-        ).length;
-        const avgConf =
-          decisionData.length > 0
-            ? decisionData.reduce(
-                (sum, d) => sum + d.confidence_at_decision,
-                0
-              ) / decisionData.length
-            : 0;
+  const { recentDecisions, systemMetrics } = data;
 
-        setStats({
-          totalDecisions: decisionData.length,
-          autoHeal: autoHealCount,
-          adminReview: adminReviewCount,
-          avgConfidence: Math.round(avgConf * 100),
-        });
-      } catch (error) {
-        console.error('Error fetching decision data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Calculate real stats from data
+  const autoHealCount = recentDecisions.filter(
+    d => d.decision_type === 'AUTO_HEAL'
+  ).length;
+  const adminReviewCount = recentDecisions.filter(
+    d => d.decision_type === 'ADMIN_REVIEW'
+  ).length;
+  const avgConf = recentDecisions.length > 0
+    ? recentDecisions.reduce((sum, d) => sum + d.confidence_at_decision, 0) / recentDecisions.length
+    : 0;
 
-    fetchData();
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  const stats = {
+    totalDecisions: recentDecisions.length,
+    autoHeal: autoHealCount,
+    adminReview: adminReviewCount,
+    avgConfidence: Math.round(avgConf * 100),
+  };
 
   const columns: DataTableColumn<DecisionLog>[] = [
     {
@@ -130,10 +119,28 @@ export default function DecisionsPage() {
     <div className="space-y-8">
       {/* Page Header */}
       <div className="border-b border-slate-200 pb-6">
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">Decision Log</h1>
-        <p className="text-slate-600">
-          Automated and manual decisions made for detected database issues
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">Decision Log</h1>
+            <p className="text-slate-600">
+              Automated and manual decisions made for detected database issues
+            </p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${systemMetrics.isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+              <span className="text-sm text-slate-600">
+                {systemMetrics.isConnected ? 'Live Data' : 'Offline'}
+              </span>
+            </div>
+            <button
+              onClick={refresh}
+              className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+            >
+              Refresh
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -169,7 +176,7 @@ export default function DecisionsPage() {
         title="Decision History"
         description="Complete log of all decisions made by the system"
       >
-        <DataTable columns={columns} data={decisions} loading={loading} />
+        <DataTable columns={columns} data={recentDecisions} loading={loading} />
       </Section>
 
       {/* Decision Analytics */}
@@ -180,11 +187,11 @@ export default function DecisionsPage() {
         >
           <div className="space-y-4">
             {['AUTO_HEAL', 'ADMIN_REVIEW', 'ESCALATED'].map(decisionType => {
-              const count = decisions.filter(
+              const count = recentDecisions.filter(
                 d => d.decision_type === decisionType
               ).length;
               const percentage =
-                decisions.length > 0 ? (count / decisions.length) * 100 : 0;
+                recentDecisions.length > 0 ? (count / recentDecisions.length) * 100 : 0;
 
               return (
                 <div
@@ -232,7 +239,7 @@ export default function DecisionsPage() {
           description="Latest decision-making activity"
         >
           <div className="space-y-4">
-            {decisions.slice(0, 5).map(decision => (
+            {recentDecisions.slice(0, 5).map(decision => (
               <div
                 key={decision.decision_id}
                 className="p-4 bg-white border border-slate-200 rounded-xl"
