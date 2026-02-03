@@ -32,16 +32,16 @@ export default function LearningPage() {
   const resolvedCount = recentLearning.filter(
     l => l.outcome === 'RESOLVED'
   ).length;
-  const avgImprovement = recentLearning.length > 0
-    ? recentLearning.reduce(
-        (sum, l) => sum + (l.confidence_after - l.confidence_before),
-        0
-      ) / recentLearning.length
-    : 0;
+  const avgImprovement =
+    recentLearning.length > 0
+      ? recentLearning.reduce(
+          (sum, l) => sum + (l.confidence_after - l.confidence_before),
+          0
+        ) / recentLearning.length
+      : 0;
 
-  const bestPerforming = recentLearning.length > 0 
-    ? recentLearning[0].issue_type 
-    : 'Unknown';
+  const bestPerforming =
+    recentLearning.length > 0 ? recentLearning[0].issue_type : 'Unknown';
 
   const stats = {
     totalRecords: recentLearning.length,
@@ -146,12 +146,15 @@ export default function LearningPage() {
               Learning History
             </h1>
             <p className="text-slate-600">
-              System learning and improvement tracking for continuous enhancement
+              System learning and improvement tracking for continuous
+              enhancement
             </p>
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${systemMetrics.isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+              <div
+                className={`w-3 h-3 rounded-full ${systemMetrics.isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}
+              ></div>
               <span className="text-sm text-slate-600">
                 {systemMetrics.isConnected ? 'Live Data' : 'Offline'}
               </span>
@@ -266,13 +269,23 @@ export default function LearningPage() {
           <div className="space-y-4">
             {Array.from(new Set(recentLearning.map(l => l.issue_type))).map(
               issueType => {
-                const records = recentLearning.filter(l => l.issue_type === issueType);
-                const avgImprovement = records.length > 0
-                  ? records.reduce((sum, l) => sum + (l.confidence_after - l.confidence_before), 0) / records.length
-                  : 0;
-                const successRate = records.length > 0
-                  ? (records.filter(l => l.outcome === 'RESOLVED').length / records.length) * 100
-                  : 0;
+                const records = recentLearning.filter(
+                  l => l.issue_type === issueType
+                );
+                const avgImprovement =
+                  records.length > 0
+                    ? records.reduce(
+                        (sum, l) =>
+                          sum + (l.confidence_after - l.confidence_before),
+                        0
+                      ) / records.length
+                    : 0;
+                const successRate =
+                  records.length > 0
+                    ? (records.filter(l => l.outcome === 'RESOLVED').length /
+                        records.length) *
+                      100
+                    : 0;
 
                 return (
                   <div
@@ -326,7 +339,9 @@ export default function LearningPage() {
               <div className="w-16 bg-blue-200 rounded-full h-2">
                 <div
                   className="bg-blue-500 h-2 rounded-full"
-                  style={{ width: `${Math.max(85, stats.avgImprovement + 50)}%` }}
+                  style={{
+                    width: `${Math.max(85, stats.avgImprovement + 50)}%`,
+                  }}
                 />
               </div>
               <span className="text-sm font-medium text-blue-600">
@@ -344,11 +359,16 @@ export default function LearningPage() {
               <div className="w-16 bg-green-200 rounded-full h-2">
                 <div
                   className="bg-green-500 h-2 rounded-full"
-                  style={{ width: `${recentLearning.length > 0 ? (stats.resolved / stats.totalRecords) * 100 : 92}%` }}
+                  style={{
+                    width: `${recentLearning.length > 0 ? (stats.resolved / stats.totalRecords) * 100 : 92}%`,
+                  }}
                 />
               </div>
               <span className="text-sm font-medium text-green-600">
-                {recentLearning.length > 0 ? Math.round((stats.resolved / stats.totalRecords) * 100) : 92}%
+                {recentLearning.length > 0
+                  ? Math.round((stats.resolved / stats.totalRecords) * 100)
+                  : 92}
+                %
               </span>
             </div>
           </div>

@@ -35,9 +35,11 @@ export default function DecisionsPage() {
   const adminReviewCount = recentDecisions.filter(
     d => d.decision_type === 'ADMIN_REVIEW'
   ).length;
-  const avgConf = recentDecisions.length > 0
-    ? recentDecisions.reduce((sum, d) => sum + d.confidence_at_decision, 0) / recentDecisions.length
-    : 0;
+  const avgConf =
+    recentDecisions.length > 0
+      ? recentDecisions.reduce((sum, d) => sum + d.confidence_at_decision, 0) /
+        recentDecisions.length
+      : 0;
 
   const stats = {
     totalDecisions: recentDecisions.length,
@@ -121,14 +123,18 @@ export default function DecisionsPage() {
       <div className="border-b border-slate-200 pb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">Decision Log</h1>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">
+              Decision Log
+            </h1>
             <p className="text-slate-600">
               Automated and manual decisions made for detected database issues
             </p>
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${systemMetrics.isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+              <div
+                className={`w-3 h-3 rounded-full ${systemMetrics.isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}
+              ></div>
               <span className="text-sm text-slate-600">
                 {systemMetrics.isConnected ? 'Live Data' : 'Offline'}
               </span>
@@ -191,7 +197,9 @@ export default function DecisionsPage() {
                 d => d.decision_type === decisionType
               ).length;
               const percentage =
-                recentDecisions.length > 0 ? (count / recentDecisions.length) * 100 : 0;
+                recentDecisions.length > 0
+                  ? (count / recentDecisions.length) * 100
+                  : 0;
 
               return (
                 <div

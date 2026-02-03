@@ -81,7 +81,10 @@ export default function AdminReviewPage() {
       header: 'Comment',
       render: value => (
         <div className="max-w-xs">
-          <p className="text-sm text-slate-700 truncate" title={value || 'No comment'}>
+          <p
+            className="text-sm text-slate-700 truncate"
+            title={value || 'No comment'}
+          >
             {value || 'No comment provided'}
           </p>
         </div>
@@ -93,9 +96,7 @@ export default function AdminReviewPage() {
       render: value => (
         <span
           className={`text-xs px-2 py-1 rounded-full ${
-            value
-              ? 'bg-red-100 text-red-700'
-              : 'bg-green-100 text-green-700'
+            value ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
           }`}
         >
           {value ? 'YES' : 'NO'}
@@ -119,14 +120,19 @@ export default function AdminReviewPage() {
       <div className="border-b border-slate-200 pb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">Admin Review</h1>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">
+              Admin Review
+            </h1>
             <p className="text-slate-600">
-              Human validation and intervention points for critical system decisions
+              Human validation and intervention points for critical system
+              decisions
             </p>
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${systemMetrics.isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+              <div
+                className={`w-3 h-3 rounded-full ${systemMetrics.isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}
+              ></div>
               <span className="text-sm text-slate-600">
                 {systemMetrics.isConnected ? 'Live Data' : 'Offline'}
               </span>
@@ -215,7 +221,9 @@ export default function AdminReviewPage() {
                 r => r.admin_action === action
               ).length;
               const percentage =
-                recentReviews.length > 0 ? (count / recentReviews.length) * 100 : 0;
+                recentReviews.length > 0
+                  ? (count / recentReviews.length) * 100
+                  : 0;
 
               return (
                 <div

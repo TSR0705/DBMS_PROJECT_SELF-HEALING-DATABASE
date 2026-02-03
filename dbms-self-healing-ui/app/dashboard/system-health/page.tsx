@@ -114,7 +114,9 @@ export default function SystemHealth() {
           {/* Connection details card with real data */}
           <div className="bg-gradient-to-br from-white/80 to-blue-50/80 backdrop-blur-xl rounded-2xl border border-white/20 shadow-xl p-8">
             <h4 className="text-xl font-bold text-slate-900 mb-6 flex items-center">
-              <div className={`w-2 h-2 rounded-full mr-3 animate-pulse ${isHealthy ? 'bg-blue-500' : 'bg-red-500'}`}></div>
+              <div
+                className={`w-2 h-2 rounded-full mr-3 animate-pulse ${isHealthy ? 'bg-blue-500' : 'bg-red-500'}`}
+              ></div>
               Connection Details
             </h4>
             <div className="space-y-4">
@@ -142,7 +144,9 @@ export default function SystemHealth() {
               </div>
 
               <div className="flex justify-between items-center p-4 bg-white/60 rounded-xl border border-white/30">
-                <span className="font-medium text-slate-600">Detection Time</span>
+                <span className="font-medium text-slate-600">
+                  Detection Time
+                </span>
                 <span className="font-mono text-sm text-slate-900">
                   {systemMetrics.detectionTime}
                 </span>
@@ -153,14 +157,20 @@ export default function SystemHealth() {
           {/* Performance indicators card with real data */}
           <div className="bg-gradient-to-br from-white/80 to-green-50/80 backdrop-blur-xl rounded-2xl border border-white/20 shadow-xl p-8">
             <h4 className="text-xl font-bold text-slate-900 mb-6 flex items-center">
-              <div className={`w-2 h-2 rounded-full mr-3 animate-pulse ${isHealthy ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <div
+                className={`w-2 h-2 rounded-full mr-3 animate-pulse ${isHealthy ? 'bg-green-500' : 'bg-red-500'}`}
+              ></div>
               Performance Indicators
             </h4>
             <div className="space-y-4">
               <div className="flex items-center space-x-3 p-4 bg-white/60 rounded-xl border border-white/30">
-                <div className={`w-4 h-4 rounded-full ${isHealthy ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                <div
+                  className={`w-4 h-4 rounded-full ${isHealthy ? 'bg-green-400' : 'bg-red-400'}`}
+                ></div>
                 <div className="flex-1">
-                  <div className="font-medium text-slate-700">Auto-Heal Success</div>
+                  <div className="font-medium text-slate-700">
+                    Auto-Heal Success
+                  </div>
                   <div className="text-sm text-slate-500">
                     {systemMetrics.autoHealSuccessRate}% success rate
                   </div>
@@ -173,7 +183,9 @@ export default function SystemHealth() {
               </div>
 
               <div className="flex items-center space-x-3 p-4 bg-white/60 rounded-xl border border-white/30">
-                <div className={`w-4 h-4 rounded-full animate-pulse ${isHealthy ? 'bg-green-400 shadow-lg shadow-green-400/50' : 'bg-red-400'}`}></div>
+                <div
+                  className={`w-4 h-4 rounded-full animate-pulse ${isHealthy ? 'bg-green-400 shadow-lg shadow-green-400/50' : 'bg-red-400'}`}
+                ></div>
                 <span className="font-medium text-slate-700">
                   {isHealthy ? 'Real-time Monitoring' : 'Monitoring Offline'}
                 </span>
@@ -205,16 +217,28 @@ export default function SystemHealth() {
               </h4>
               <div className="space-y-4">
                 <div className="flex justify-between items-center p-4 bg-white/60 rounded-xl border border-white/30">
-                  <span className="font-medium text-slate-600">Total Issues</span>
-                  <span className="font-bold text-slate-900">{systemMetrics.totalIssues}</span>
+                  <span className="font-medium text-slate-600">
+                    Total Issues
+                  </span>
+                  <span className="font-bold text-slate-900">
+                    {systemMetrics.totalIssues}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-white/60 rounded-xl border border-white/30">
-                  <span className="font-medium text-slate-600">Actions Taken</span>
-                  <span className="font-bold text-slate-900">{systemMetrics.totalActions}</span>
+                  <span className="font-medium text-slate-600">
+                    Actions Taken
+                  </span>
+                  <span className="font-bold text-slate-900">
+                    {systemMetrics.totalActions}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-white/60 rounded-xl border border-white/30">
-                  <span className="font-medium text-slate-600">Issues Resolved</span>
-                  <span className="font-bold text-slate-900">{systemMetrics.issuesResolved}</span>
+                  <span className="font-medium text-slate-600">
+                    Issues Resolved
+                  </span>
+                  <span className="font-bold text-slate-900">
+                    {systemMetrics.issuesResolved}
+                  </span>
                 </div>
               </div>
             </div>
@@ -227,21 +251,33 @@ export default function SystemHealth() {
               </h4>
               <div className="space-y-4">
                 <div className="flex items-center space-x-3 p-4 bg-white/60 rounded-xl border border-white/30">
-                  <div className={`w-3 h-3 rounded-full animate-pulse ${isHealthy ? 'bg-green-400 shadow-lg shadow-green-400/50' : 'bg-red-400'}`}></div>
+                  <div
+                    className={`w-3 h-3 rounded-full animate-pulse ${isHealthy ? 'bg-green-400 shadow-lg shadow-green-400/50' : 'bg-red-400'}`}
+                  ></div>
                   <span className="font-medium text-slate-700">
-                    {isHealthy ? 'Health checks active' : 'Health checks offline'}
+                    {isHealthy
+                      ? 'Health checks active'
+                      : 'Health checks offline'}
                   </span>
                 </div>
                 <div className="flex items-center space-x-3 p-4 bg-white/60 rounded-xl border border-white/30">
-                  <div className={`w-3 h-3 rounded-full animate-pulse ${isHealthy ? 'bg-blue-400 shadow-lg shadow-blue-400/50' : 'bg-gray-400'}`}></div>
+                  <div
+                    className={`w-3 h-3 rounded-full animate-pulse ${isHealthy ? 'bg-blue-400 shadow-lg shadow-blue-400/50' : 'bg-gray-400'}`}
+                  ></div>
                   <span className="font-medium text-slate-700">
-                    {isHealthy ? 'Real-time updates enabled' : 'Updates disabled'}
+                    {isHealthy
+                      ? 'Real-time updates enabled'
+                      : 'Updates disabled'}
                   </span>
                 </div>
                 <div className="flex items-center space-x-3 p-4 bg-white/60 rounded-xl border border-white/30">
-                  <div className={`w-3 h-3 rounded-full animate-pulse ${isHealthy ? 'bg-purple-400 shadow-lg shadow-purple-400/50' : 'bg-gray-400'}`}></div>
+                  <div
+                    className={`w-3 h-3 rounded-full animate-pulse ${isHealthy ? 'bg-purple-400 shadow-lg shadow-purple-400/50' : 'bg-gray-400'}`}
+                  ></div>
                   <span className="font-medium text-slate-700">
-                    {isHealthy ? 'Performance tracking active' : 'Tracking offline'}
+                    {isHealthy
+                      ? 'Performance tracking active'
+                      : 'Tracking offline'}
                   </span>
                 </div>
               </div>
@@ -257,19 +293,27 @@ export default function SystemHealth() {
       >
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           <div className="text-center p-6 bg-white border border-slate-200 rounded-xl">
-            <div className="text-3xl font-bold text-slate-900 mb-2">{systemMetrics.totalAnalysis}</div>
+            <div className="text-3xl font-bold text-slate-900 mb-2">
+              {systemMetrics.totalAnalysis}
+            </div>
             <div className="text-slate-600 text-sm">AI Analysis</div>
           </div>
           <div className="text-center p-6 bg-white border border-slate-200 rounded-xl">
-            <div className="text-3xl font-bold text-slate-900 mb-2">{systemMetrics.totalDecisions}</div>
+            <div className="text-3xl font-bold text-slate-900 mb-2">
+              {systemMetrics.totalDecisions}
+            </div>
             <div className="text-slate-600 text-sm">Decisions</div>
           </div>
           <div className="text-center p-6 bg-white border border-slate-200 rounded-xl">
-            <div className="text-3xl font-bold text-slate-900 mb-2">{systemMetrics.totalLearning}</div>
+            <div className="text-3xl font-bold text-slate-900 mb-2">
+              {systemMetrics.totalLearning}
+            </div>
             <div className="text-slate-600 text-sm">Learning Records</div>
           </div>
           <div className="text-center p-6 bg-white border border-slate-200 rounded-xl">
-            <div className="text-3xl font-bold text-slate-900 mb-2">{systemMetrics.totalReviews}</div>
+            <div className="text-3xl font-bold text-slate-900 mb-2">
+              {systemMetrics.totalReviews}
+            </div>
             <div className="text-slate-600 text-sm">Admin Reviews</div>
           </div>
         </div>

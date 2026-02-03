@@ -32,10 +32,13 @@ export default function AIAnalysisPage() {
   const highSeverityCount = recentAnalysis.filter(
     a => a.severity_level === 'HIGH'
   ).length;
-  const avgConf = recentAnalysis.length > 0
-    ? recentAnalysis.reduce((sum, a) => sum + a.confidence_score, 0) / recentAnalysis.length
-    : 0;
-  const latestModel = recentAnalysis.length > 0 ? recentAnalysis[0].model_version : 'Unknown';
+  const avgConf =
+    recentAnalysis.length > 0
+      ? recentAnalysis.reduce((sum, a) => sum + a.confidence_score, 0) /
+        recentAnalysis.length
+      : 0;
+  const latestModel =
+    recentAnalysis.length > 0 ? recentAnalysis[0].model_version : 'Unknown';
 
   const stats = {
     totalAnalyses: recentAnalysis.length,
@@ -133,14 +136,18 @@ export default function AIAnalysisPage() {
       <div className="border-b border-slate-200 pb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">AI Analysis</h1>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">
+              AI Analysis
+            </h1>
             <p className="text-slate-600">
               Machine learning analysis results for detected database issues
             </p>
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${systemMetrics.isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+              <div
+                className={`w-3 h-3 rounded-full ${systemMetrics.isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}
+              ></div>
               <span className="text-sm text-slate-600">
                 {systemMetrics.isConnected ? 'Live Data' : 'Offline'}
               </span>
@@ -203,7 +210,9 @@ export default function AIAnalysisPage() {
                 a => a.severity_level === severity
               ).length;
               const percentage =
-                recentAnalysis.length > 0 ? (count / recentAnalysis.length) * 100 : 0;
+                recentAnalysis.length > 0
+                  ? (count / recentAnalysis.length) * 100
+                  : 0;
 
               return (
                 <div

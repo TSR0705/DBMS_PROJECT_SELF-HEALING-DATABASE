@@ -29,12 +29,17 @@ export default function SystemOverview() {
     <div className="space-y-8">
       {/* Header with real system status */}
       <div className="border-b border-slate-200 pb-6">
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">System Overview</h1>
+        <h1 className="text-3xl font-bold text-slate-900 mb-2">
+          System Overview
+        </h1>
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
-            <div className={`w-3 h-3 rounded-full ${systemMetrics.isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+            <div
+              className={`w-3 h-3 rounded-full ${systemMetrics.isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}
+            ></div>
             <span className="text-sm text-slate-600">
-              Database: {systemMetrics.isConnected ? 'Connected' : 'Disconnected'}
+              Database:{' '}
+              {systemMetrics.isConnected ? 'Connected' : 'Disconnected'}
             </span>
           </div>
           <div className="text-sm text-slate-500">
@@ -101,8 +106,11 @@ export default function SystemOverview() {
       >
         {recentIssues.length > 0 ? (
           <div className="space-y-4">
-            {recentIssues.map((issue) => (
-              <div key={issue.issue_id} className="bg-white border border-slate-200 p-4 rounded">
+            {recentIssues.map(issue => (
+              <div
+                key={issue.issue_id}
+                className="bg-white border border-slate-200 p-4 rounded"
+              >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-3">
                     <span className="font-mono text-sm bg-slate-100 px-2 py-1 rounded">
@@ -151,8 +159,11 @@ export default function SystemOverview() {
       >
         {recentActions.length > 0 ? (
           <div className="space-y-4">
-            {recentActions.map((action) => (
-              <div key={action.action_id} className="bg-white border border-slate-200 p-4 rounded">
+            {recentActions.map(action => (
+              <div
+                key={action.action_id}
+                className="bg-white border border-slate-200 p-4 rounded"
+              >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-3">
                     <span className="font-mono text-sm bg-slate-100 px-2 py-1 rounded">
@@ -161,13 +172,15 @@ export default function SystemOverview() {
                     <span className="font-semibold text-slate-900">
                       {action.action_type}
                     </span>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      action.execution_status === 'SUCCESS' 
-                        ? 'bg-green-100 text-green-700'
-                        : action.execution_status === 'FAILED'
-                        ? 'bg-red-100 text-red-700'
-                        : 'bg-yellow-100 text-yellow-700'
-                    }`}>
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-medium ${
+                        action.execution_status === 'SUCCESS'
+                          ? 'bg-green-100 text-green-700'
+                          : action.execution_status === 'FAILED'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-yellow-100 text-yellow-700'
+                      }`}
+                    >
                       {action.execution_status}
                     </span>
                   </div>
@@ -206,11 +219,15 @@ export default function SystemOverview() {
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white border border-slate-200 p-6 rounded">
-            <h3 className="font-semibold text-slate-900 mb-4">Database Status</h3>
+            <h3 className="font-semibold text-slate-900 mb-4">
+              Database Status
+            </h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-slate-600">Connection</span>
-                <span className={`font-medium ${systemMetrics.isConnected ? 'text-green-600' : 'text-red-600'}`}>
+                <span
+                  className={`font-medium ${systemMetrics.isConnected ? 'text-green-600' : 'text-red-600'}`}
+                >
                   {systemMetrics.isConnected ? 'Connected' : 'Disconnected'}
                 </span>
               </div>
@@ -220,7 +237,9 @@ export default function SystemOverview() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-600">Actions Executed</span>
-                <span className="font-medium">{systemMetrics.totalActions}</span>
+                <span className="font-medium">
+                  {systemMetrics.totalActions}
+                </span>
               </div>
             </div>
           </div>
@@ -230,15 +249,21 @@ export default function SystemOverview() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-slate-600">Analysis Completed</span>
-                <span className="font-medium">{systemMetrics.totalAnalysis}</span>
+                <span className="font-medium">
+                  {systemMetrics.totalAnalysis}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-600">Decisions Made</span>
-                <span className="font-medium">{systemMetrics.totalDecisions}</span>
+                <span className="font-medium">
+                  {systemMetrics.totalDecisions}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-600">Learning Records</span>
-                <span className="font-medium">{systemMetrics.totalLearning}</span>
+                <span className="font-medium">
+                  {systemMetrics.totalLearning}
+                </span>
               </div>
             </div>
           </div>
