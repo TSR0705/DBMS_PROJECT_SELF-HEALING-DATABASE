@@ -1,64 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { StatsCard } from '@/components/ui-dbms/StatsCard';
 import { Section } from '@/components/ui-dbms/Section';
-import { apiClient } from '@/lib/api';
+import { useRealtimeData } from '@/lib/realtime-service';
 
-// Modern Overview Dashboard with real data integration
 export default function SystemOverview() {
-  const [systemStats, setSystemStats] = useState({
-    totalIssues: 0,
-    activeIssues: 0,
-    resolvedIssues: 0,
-    systemHealth: 'unknown',
-    lastUpdate: new Date(),
-  });
-  const [loading, setLoading] = useState(true);
+  const { data, loading, refresh } = useRealtimeData();
 
-  useEffect(() => {
-    const fetchSystemData = async () => {
-      try {
-        setLoading(true);
-        const [issues, health] = await Promise.all([
-          apiClient.getDetectedIssues().catch(() => []),
-          apiClient
-            .getHealthCheck()
-            .catch(() => ({
-              status: 'unknown',
-              database_connected: false,
-              timestamp: new Date().toISOString(),
-            })),
-        ]);
-
-        setSystemStats({
-          totalIssues: issues.length,
-          activeIssues: issues.length,
-          resolvedIssues: 0,
-          systemHealth: health.status || 'unknown',
-          lastUpdate: new Date(),
-        });
-      } catch (error) {
-        console.error('Error fetching system data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSystemData();
-    const interval = setInterval(fetchSystemData, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  if (loading) {
+  if (loading || !data) {
     return (
       <div className="space-y-8">
         <div className="animate-pulse space-y-6">
-          <div className="h-20 bg-slate-200 rounded-2xl"></div>
-          <div className="h-8 bg-slate-200 rounded-xl w-2/3"></div>
+          <div className="h-20 bg-slate-200 rounded"></div>
+          <div className="h-8 bg-slate-200 rounded w-2/3"></div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-40 bg-slate-200 rounded-2xl"></div>
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-40 bg-slate-200 rounded"></div>
             ))}
           </div>
         </div>
@@ -66,286 +23,225 @@ export default function SystemOverview() {
     );
   }
 
+  const { systemMetrics, recentIssues, recentActions } = data;
+
   return (
     <div className="space-y-8">
-      {/* Hero section */}
-      <div className="text-center space-y-6 py-12 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-3xl">
-        <h1 className="text-5xl font-black text-slate-900 mb-6">
-          DBMS Console
-        </h1>
-        <p className="text-xl text-slate-600 max-w-4xl mx-auto leading-relaxed mb-8">
-          Intelligent Database Management System with AI-Powered Self-Healing
-          Capabilities
-        </p>
-
-        {/* Status indicators */}
-        <div className="flex items-center justify-center space-x-6">
-          <div
-            className={`flex items-center space-x-3 bg-white rounded-full px-6 py-3 shadow-lg border ${
-              systemStats.systemHealth === 'healthy'
-                ? 'border-green-200'
-                : 'border-red-200'
-            }`}
+      {/* Header with real system status */}
+      <div className="border-b border-slate-200 pb-6">
+        <h1 className="text-3xl font-bold text-slate-900 mb-2">System Overview</h1>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <div className={`w-3 h-3 rounded-full ${systemMetrics.isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+            <span className="text-sm text-slate-600">
+              Database: {systemMetrics.isConnected ? 'Connected' : 'Disconnected'}
+            </span>
+          </div>
+          <div className="text-sm text-slate-500">
+            Last updated: {systemMetrics.lastUpdate.toLocaleTimeString()}
+          </div>
+          <button
+            onClick={refresh}
+            className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
           >
-            <div
-              className={`w-3 h-3 rounded-full animate-pulse ${
-                systemStats.systemHealth === 'healthy'
-                  ? 'bg-green-400'
-                  : 'bg-red-400'
-              }`}
-            ></div>
-            <span className="text-sm font-bold text-slate-700">
-              System{' '}
-              {systemStats.systemHealth === 'healthy'
-                ? 'Healthy'
-                : 'Monitoring'}
-            </span>
-          </div>
-          <div className="bg-white rounded-full px-6 py-3 shadow-lg border border-slate-200">
-            <span className="text-sm font-mono text-slate-700">
-              Last Update: {systemStats.lastUpdate.toLocaleTimeString()}
-            </span>
-          </div>
+            Refresh
+          </button>
         </div>
       </div>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Real Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
         <StatsCard
-          title="Total Issues"
-          value={systemStats.totalIssues}
-          subtitle="Detected anomalies"
-          trend="neutral"
-        />
-
-        <StatsCard
-          title="Active Issues"
-          value={systemStats.activeIssues}
-          subtitle="Requires attention"
-          trend={systemStats.activeIssues > 0 ? 'up' : 'neutral'}
-        />
-
-        <StatsCard
-          title="System Health"
-          value={
-            systemStats.systemHealth === 'healthy' ? '99.9%' : 'Monitoring'
-          }
-          subtitle="Uptime status"
-          trend={systemStats.systemHealth === 'healthy' ? 'up' : 'neutral'}
+          title="Issues Detected"
+          value={systemMetrics.totalIssues}
+          subtitle="Total database issues"
+          trend={systemMetrics.totalIssues > 0 ? 'up' : 'neutral'}
         />
 
         <StatsCard
           title="AI Analysis"
-          value="Active"
-          subtitle="Machine learning"
-          trend="up"
+          value={systemMetrics.totalAnalysis}
+          subtitle="Completed analysis"
+          trend="neutral"
+        />
+
+        <StatsCard
+          title="Decisions Made"
+          value={systemMetrics.totalDecisions}
+          subtitle="System decisions"
+          trend="neutral"
+        />
+
+        <StatsCard
+          title="Actions Taken"
+          value={systemMetrics.totalActions}
+          subtitle="Healing actions"
+          trend="neutral"
+        />
+
+        <StatsCard
+          title="Admin Reviews"
+          value={systemMetrics.totalReviews}
+          subtitle="Manual reviews"
+          trend="neutral"
+        />
+
+        <StatsCard
+          title="Learning Records"
+          value={systemMetrics.totalLearning}
+          subtitle="System learning"
+          trend="neutral"
         />
       </div>
 
-      {/* Feature sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* System Architecture */}
-        <Section
-          title="System Architecture"
-          description="Advanced self-healing database management with AI-powered monitoring"
-        >
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-lg p-8">
-            <div className="space-y-6">
-              {[
-                {
-                  name: 'Detection Engine',
-                  status: 'Active',
-                  description: 'Real-time anomaly detection',
-                  color: 'green',
-                },
-                {
-                  name: 'AI Analysis',
-                  status: 'Processing',
-                  description: 'Machine learning classification',
-                  color: 'blue',
-                },
-                {
-                  name: 'Decision Engine',
-                  status: 'Ready',
-                  description: 'Automated decision making',
-                  color: 'purple',
-                },
-                {
-                  name: 'Healing Actions',
-                  status: 'Standby',
-                  description: 'Automated remediation',
-                  color: 'indigo',
-                },
-              ].map((component, index) => (
-                <div
-                  key={component.name}
-                  className="flex items-center space-x-4 p-4 bg-slate-50 rounded-xl border border-slate-200"
-                >
-                  <div
-                    className={`w-4 h-4 rounded-full animate-pulse ${
-                      component.color === 'green'
-                        ? 'bg-green-400'
-                        : component.color === 'blue'
-                          ? 'bg-blue-400'
-                          : component.color === 'purple'
-                            ? 'bg-purple-400'
-                            : 'bg-indigo-400'
-                    }`}
-                  ></div>
-                  <div className="flex-1">
-                    <div className="font-semibold text-slate-900">
-                      {component.name}
-                    </div>
-                    <div className="text-sm text-slate-600">
-                      {component.description}
-                    </div>
-                  </div>
-                  <div
-                    className={`px-3 py-1 rounded-full text-xs font-bold ${
-                      component.color === 'green'
-                        ? 'bg-green-100 text-green-700'
-                        : component.color === 'blue'
-                          ? 'bg-blue-100 text-blue-700'
-                          : component.color === 'purple'
-                            ? 'bg-purple-100 text-purple-700'
-                            : 'bg-indigo-100 text-indigo-700'
-                    }`}
-                  >
-                    {component.status}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Section>
-
-        {/* Recent Activity */}
-        <Section
-          title="Recent Activity"
-          description="Latest system events and automated responses"
-        >
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-lg p-8">
-            <div className="space-y-4">
-              {[
-                {
-                  time: '2 min ago',
-                  event: 'Slow query detected',
-                  type: 'detection',
-                  severity: 'medium',
-                },
-                {
-                  time: '5 min ago',
-                  event: 'AI analysis completed',
-                  type: 'analysis',
-                  severity: 'info',
-                },
-                {
-                  time: '8 min ago',
-                  event: 'Deadlock resolved',
-                  type: 'resolution',
-                  severity: 'success',
-                },
-                {
-                  time: '12 min ago',
-                  event: 'Performance threshold exceeded',
-                  type: 'detection',
-                  severity: 'high',
-                },
-                {
-                  time: '15 min ago',
-                  event: 'System health check passed',
-                  type: 'health',
-                  severity: 'success',
-                },
-              ].map((activity, index) => (
-                <div
-                  key={index}
-                  className="flex items-center space-x-4 p-4 bg-slate-50 rounded-xl border border-slate-200"
-                >
-                  <div
-                    className={`w-3 h-3 rounded-full ${
-                      activity.severity === 'success'
-                        ? 'bg-green-400'
-                        : activity.severity === 'high'
-                          ? 'bg-red-400'
-                          : activity.severity === 'medium'
-                            ? 'bg-yellow-400'
-                            : 'bg-blue-400'
-                    }`}
-                  ></div>
-                  <div className="flex-1">
-                    <div className="font-medium text-slate-900">
-                      {activity.event}
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      {activity.time}
-                    </div>
-                  </div>
-                  <div
-                    className={`px-2 py-1 rounded text-xs font-medium ${
-                      activity.type === 'detection'
-                        ? 'bg-blue-100 text-blue-700'
-                        : activity.type === 'analysis'
-                          ? 'bg-purple-100 text-purple-700'
-                          : activity.type === 'resolution'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-slate-100 text-slate-700'
-                    }`}
-                  >
-                    {activity.type}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Section>
-      </div>
-
-      {/* Capabilities showcase */}
+      {/* Real Recent Issues */}
       <Section
-        title="Platform Capabilities"
-        description="Comprehensive database management with intelligent automation"
+        title="Recent Issues"
+        description="Latest detected database issues from monitoring systems"
       >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            {
-              title: 'Real-time Monitoring',
-              description:
-                'Continuous database performance tracking with instant anomaly detection',
-              icon: '📊',
-              color: 'blue',
-            },
-            {
-              title: 'AI-Powered Analysis',
-              description:
-                'Machine learning algorithms for intelligent issue classification',
-              icon: '🤖',
-              color: 'purple',
-            },
-            {
-              title: 'Automated Healing',
-              description:
-                'Self-healing capabilities with automated remediation processes',
-              icon: '⚡',
-              color: 'green',
-            },
-          ].map((capability, index) => (
-            <div
-              key={capability.title}
-              className={`
-              bg-white rounded-2xl border border-slate-200 shadow-lg p-8 
-              hover:shadow-xl hover:-translate-y-1 transition-all duration-300
-            `}
-            >
-              <div className="text-4xl mb-6">{capability.icon}</div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">
-                {capability.title}
-              </h3>
-              <p className="text-slate-600 leading-relaxed">
-                {capability.description}
-              </p>
+        {recentIssues.length > 0 ? (
+          <div className="space-y-4">
+            {recentIssues.map((issue) => (
+              <div key={issue.issue_id} className="bg-white border border-slate-200 p-4 rounded">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-3">
+                    <span className="font-mono text-sm bg-slate-100 px-2 py-1 rounded">
+                      #{issue.issue_id}
+                    </span>
+                    <span className="font-semibold text-slate-900">
+                      {issue.issue_type}
+                    </span>
+                  </div>
+                  <span className="text-sm text-slate-500">
+                    {new Date(issue.detected_at).toLocaleString()}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="text-slate-600">Source:</span>
+                    <p className="font-medium">{issue.detection_source}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-600">Metric Value:</span>
+                    <p className="font-medium">
+                      {issue.raw_metric_value} {issue.raw_metric_unit}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-slate-600">Detected:</span>
+                    <p className="font-medium">
+                      {new Date(issue.detected_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-slate-500">
+            No issues detected in the system
+          </div>
+        )}
+      </Section>
+
+      {/* Real Recent Actions */}
+      <Section
+        title="Recent Actions"
+        description="Latest healing actions executed by the system"
+      >
+        {recentActions.length > 0 ? (
+          <div className="space-y-4">
+            {recentActions.map((action) => (
+              <div key={action.action_id} className="bg-white border border-slate-200 p-4 rounded">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-3">
+                    <span className="font-mono text-sm bg-slate-100 px-2 py-1 rounded">
+                      #{action.action_id}
+                    </span>
+                    <span className="font-semibold text-slate-900">
+                      {action.action_type}
+                    </span>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      action.execution_status === 'SUCCESS' 
+                        ? 'bg-green-100 text-green-700'
+                        : action.execution_status === 'FAILED'
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {action.execution_status}
+                    </span>
+                  </div>
+                  <span className="text-sm text-slate-500">
+                    {new Date(action.executed_at).toLocaleString()}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="text-slate-600">Mode:</span>
+                    <p className="font-medium">{action.execution_mode}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-600">Executed By:</span>
+                    <p className="font-medium">{action.executed_by}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-600">Decision ID:</span>
+                    <p className="font-medium">#{action.decision_id}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-slate-500">
+            No healing actions have been executed yet
+          </div>
+        )}
+      </Section>
+
+      {/* System Health Summary */}
+      <Section
+        title="System Health Summary"
+        description="Current status of all DBMS monitoring components"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white border border-slate-200 p-6 rounded">
+            <h3 className="font-semibold text-slate-900 mb-4">Database Status</h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600">Connection</span>
+                <span className={`font-medium ${systemMetrics.isConnected ? 'text-green-600' : 'text-red-600'}`}>
+                  {systemMetrics.isConnected ? 'Connected' : 'Disconnected'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600">Total Issues</span>
+                <span className="font-medium">{systemMetrics.totalIssues}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600">Actions Executed</span>
+                <span className="font-medium">{systemMetrics.totalActions}</span>
+              </div>
             </div>
-          ))}
+          </div>
+
+          <div className="bg-white border border-slate-200 p-6 rounded">
+            <h3 className="font-semibold text-slate-900 mb-4">AI Processing</h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600">Analysis Completed</span>
+                <span className="font-medium">{systemMetrics.totalAnalysis}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600">Decisions Made</span>
+                <span className="font-medium">{systemMetrics.totalDecisions}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600">Learning Records</span>
+                <span className="font-medium">{systemMetrics.totalLearning}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </Section>
     </div>
