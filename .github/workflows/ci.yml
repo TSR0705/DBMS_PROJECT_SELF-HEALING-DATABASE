@@ -1,0 +1,335 @@
+name: DBMS Project CI Pipeline
+
+# Trigger CI on every push and pull request for safety and validation
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+  pull_request:
+    branches: [ main, develop ]
+
+# Ensure only one CI run per branch to prevent resource conflicts
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ==========================================
+  # 1️⃣ FRONTEND VALIDATION
+  # ==========================================
+  frontend-checks:
+    name: Frontend Validation (Next.js + TypeScript)
+    runs-on: ubuntu-22.04
+    
+    defaults:
+      run:
+        working-directory: ./dbms-self-healing-ui
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js (LTS)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './dbms-self-healing-ui/package-lock.json'
+      
+      # Install dependencies with clean slate for reproducible builds
+      - name: Install Dependencies
+        run: |
+          npm ci --prefer-offline --no-audit
+          echo "✅ Dependencies installed successfully"
+      
+      # TypeScript compilation check - CRITICAL for type safety
+      - name: TypeScript Type Check
+        run: |
+          npx tsc --noEmit --pretty
+          echo "✅ TypeScript types are valid"
+      
+      # ESLint check - Code quality and potential bugs
+      - name: ESLint Code Quality Check
+        run: |
+          npm run lint
+          echo "✅ ESLint passed - no code quality issues"
+      
+      # Prettier formatting check - Code consistency
+      - name: Prettier Format Check
+        run: |
+          npm run format:check
+          echo "✅ Code formatting is consistent"
+      
+      # Production build test - Ensures deployability
+      - name: Next.js Production Build
+        run: |
+          npm run build
+          echo "✅ Production build successful"
+        env:
+          # Disable telemetry for CI environment
+          NEXT_TELEMETRY_DISABLED: 1
+
+  # ==========================================
+  # 2️⃣ BACKEND VALIDATION
+  # ==========================================
+  backend-checks:
+    name: Backend Validation (Python + Flask)
+    runs-on: ubuntu-22.04
+    
+    defaults:
+      run:
+        working-directory: ./dbms-backend
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: './dbms-backend/requirements.txt'
+      
+      # Install Python dependencies
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest flake8 # Testing and linting tools
+          echo "✅ Python dependencies installed"
+      
+      # Python syntax and import validation
+      - name: Python Syntax Validation
+        run: |
+          python -m compileall . -f -q
+          echo "✅ Python syntax is valid"
+      
+      # Static code analysis for Python best practices
+      - name: Python Code Quality (Flake8)
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+          echo "✅ Python code quality checks passed"
+      
+      # Run Python tests (if any exist)
+      - name: Python Unit Tests
+        run: |
+          python -m pytest -v --tb=short
+          echo "✅ Python tests passed"
+        env:
+          # Prevent tests from trying to connect to real databases
+          TESTING: true
+
+  # ==========================================
+  # 3️⃣ DATABASE SCHEMA VALIDATION (CRITICAL)
+  # ==========================================
+  database-schema-validation:
+    name: Database Schema Validation (MySQL)
+    runs-on: ubuntu-22.04
+    
+    # MySQL service for schema validation ONLY
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci_test_password_123
+          MYSQL_DATABASE: dbms_self_healing_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      # Wait for MySQL to be fully ready
+      - name: Wait for MySQL Service
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -P 3306 -u root -pci_test_password_123 --silent; then
+              echo "✅ MySQL is ready"
+              break
+            fi
+            echo "Waiting for MySQL... ($i/30)"
+            sleep 2
+          done
+      
+      # Validate main schema file exists and is readable
+      - name: Validate Schema File Exists
+        run: |
+          if [ ! -f "DATABASE_THINGS/schema_refactored.sql" ]; then
+            echo "❌ Schema file not found"
+            exit 1
+          fi
+          echo "✅ Schema file found: DATABASE_THINGS/schema_refactored.sql"
+      
+      # Load and validate database schema - CRITICAL STEP
+      - name: Load Database Schema
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -u root -pci_test_password_123 dbms_self_healing_test < DATABASE_THINGS/schema_refactored.sql
+          echo "✅ Database schema loaded successfully"
+      
+      # Validate table creation and structure
+      - name: Validate Database Structure
+        run: |
+          # Check that all expected tables exist
+          TABLES=$(mysql -h 127.0.0.1 -P 3306 -u root -pci_test_password_123 -D dbms_self_healing_test -e "SHOW TABLES;" -s)
+          
+          # Expected tables from schema
+          EXPECTED_TABLES="detected_issues ai_analysis decision_log healing_actions admin_reviews learning_history"
+          
+          echo "Found tables: $TABLES"
+          
+          for table in $EXPECTED_TABLES; do
+            if echo "$TABLES" | grep -q "$table"; then
+              echo "✅ Table '$table' exists"
+            else
+              echo "❌ Table '$table' missing"
+              exit 1
+            fi
+          done
+          
+          echo "✅ All expected tables are present"
+      
+      # Validate foreign key constraints
+      - name: Validate Foreign Key Constraints
+        run: |
+          # Check foreign key constraints are properly created
+          FK_COUNT=$(mysql -h 127.0.0.1 -P 3306 -u root -pci_test_password_123 -D dbms_self_healing_test -e "
+            SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS 
+            WHERE CONSTRAINT_TYPE = 'FOREIGN KEY' AND TABLE_SCHEMA = 'dbms_self_healing_test';" -s)
+          
+          echo "Found $FK_COUNT foreign key constraints"
+          
+          if [ "$FK_COUNT" -lt 5 ]; then
+            echo "❌ Expected at least 5 foreign key constraints, found $FK_COUNT"
+            exit 1
+          fi
+          
+          echo "✅ Foreign key constraints are properly defined"
+      
+      # Validate schema integrity without data manipulation
+      - name: Schema Integrity Check
+        run: |
+          # Run ANALYZE TABLE to check for any structural issues
+          mysql -h 127.0.0.1 -P 3306 -u root -pci_test_password_123 -D dbms_self_healing_test -e "
+            ANALYZE TABLE detected_issues, ai_analysis, decision_log, healing_actions, admin_reviews, learning_history;
+          "
+          
+          # Check for any corrupted tables
+          mysql -h 127.0.0.1 -P 3306 -u root -pci_test_password_123 -D dbms_self_healing_test -e "
+            CHECK TABLE detected_issues, ai_analysis, decision_log, healing_actions, admin_reviews, learning_history;
+          "
+          
+          echo "✅ Database schema integrity validated"
+
+  # ==========================================
+  # 4️⃣ SECURITY & SAFETY VALIDATION
+  # ==========================================
+  security-checks:
+    name: Security & Safety Validation
+    runs-on: ubuntu-22.04
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      # Check for accidentally committed secrets
+      - name: Scan for Hardcoded Secrets
+        run: |
+          # Check for common secret patterns
+          if grep -r -i "password.*=" --include="*.py" --include="*.js" --include="*.ts" --include="*.json" . | grep -v ".env.example" | grep -v "ci_test_password"; then
+            echo "❌ Potential hardcoded passwords found"
+            exit 1
+          fi
+          
+          if grep -r -i "api[_-]key.*=" --include="*.py" --include="*.js" --include="*.ts" . | grep -v ".env.example"; then
+            echo "❌ Potential hardcoded API keys found"
+            exit 1
+          fi
+          
+          if grep -r -i "secret.*=" --include="*.py" --include="*.js" --include="*.ts" . | grep -v ".env.example"; then
+            echo "❌ Potential hardcoded secrets found"
+            exit 1
+          fi
+          
+          echo "✅ No hardcoded secrets detected"
+      
+      # Validate environment file structure
+      - name: Validate Environment Configuration
+        run: |
+          # Check that .env.example exists but .env does not
+          if [ ! -f "dbms-backend/.env.example" ]; then
+            echo "❌ Missing .env.example file in backend"
+            exit 1
+          fi
+          
+          if [ -f "dbms-backend/.env" ]; then
+            echo "⚠️  Warning: .env file should not be committed"
+          fi
+          
+          echo "✅ Environment configuration is properly structured"
+      
+      # Check for SQL injection vulnerabilities in schema
+      - name: SQL Security Validation
+        run: |
+          # Check for potentially dangerous SQL patterns in schema files
+          if grep -i "truncate\|drop.*without.*if.*exists" DATABASE_THINGS/*.sql; then
+            echo "❌ Potentially dangerous SQL operations found"
+            exit 1
+          fi
+          
+          # Ensure all DROP statements use IF EXISTS for safety
+          if grep -i "^drop table" DATABASE_THINGS/schema_refactored.sql | grep -v "if exists"; then
+            echo "❌ DROP statements should use IF EXISTS for safety"
+            exit 1
+          fi
+          
+          echo "✅ SQL security validation passed"
+
+  # ==========================================
+  # 5️⃣ INTEGRATION VALIDATION
+  # ==========================================
+  integration-check:
+    name: Integration Validation
+    runs-on: ubuntu-22.04
+    needs: [frontend-checks, backend-checks, database-schema-validation, security-checks]
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      # Validate project structure and documentation
+      - name: Project Structure Validation
+        run: |
+          # Check for required files
+          REQUIRED_FILES="README.md dbms-self-healing-ui/package.json dbms-backend/requirements.txt DATABASE_THINGS/schema_refactored.sql"
+          
+          for file in $REQUIRED_FILES; do
+            if [ ! -f "$file" ]; then
+              echo "❌ Required file missing: $file"
+              exit 1
+            fi
+            echo "✅ Found: $file"
+          done
+          
+          echo "✅ Project structure validation passed"
+      
+      # Final integration summary
+      - name: CI Pipeline Summary
+        run: |
+          echo "🎉 DBMS Project CI Pipeline Completed Successfully!"
+          echo ""
+          echo "✅ Frontend: TypeScript, ESLint, Prettier, Build"
+          echo "✅ Backend: Python syntax, code quality, tests"
+          echo "✅ Database: Schema validation, constraints, integrity"
+          echo "✅ Security: No hardcoded secrets, safe SQL patterns"
+          echo "✅ Integration: Project structure validated"
+          echo ""
+          echo "🔒 Academic-grade safety standards maintained"
+          echo "📊 DBMS-centric validation completed"
+          echo "🚀 Ready for academic review and evaluation"
