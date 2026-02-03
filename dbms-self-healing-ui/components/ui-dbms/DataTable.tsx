@@ -24,7 +24,7 @@ interface DataTableProps<T> {
 }
 
 // Professional data table with clean, technical design
-export function DataTable<T extends Record<string, string | number | boolean | Date | null>>({
+export function DataTable<T>({
   columns,
   data,
   className = '',
@@ -111,16 +111,17 @@ export function DataTable<T extends Record<string, string | number | boolean | D
                 >
                   {columns.map(column => {
                     const value = row[column.key];
-                    const renderedValue = column.render
-                      ? column.render(value, row, rowIndex)
-                      : value;
 
                     return (
                       <TableCell
                         key={String(column.key)}
                         className={`text-sm px-4 py-3 ${column.className || ''}`}
                       >
-                        {renderedValue}
+                        {column.render
+                          ? column.render(value, row, rowIndex)
+                          : typeof value === 'object' && value instanceof Date
+                            ? value.toLocaleString()
+                            : String(value ?? '')}
                       </TableCell>
                     );
                   })}
