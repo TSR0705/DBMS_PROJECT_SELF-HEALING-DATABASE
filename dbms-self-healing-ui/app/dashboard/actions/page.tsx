@@ -1,57 +1,50 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { DataTable, DataTableColumn } from '@/components/ui-dbms/DataTable';
 import { Section } from '@/components/ui-dbms/Section';
 import { StatsCard } from '@/components/ui-dbms/StatsCard';
 import { StatusBadge } from '@/components/ui-dbms/StatusBadge';
-import { apiClient, HealingAction } from '@/lib/api';
+import { useRealtimeData } from '@/lib/realtime-service';
+import { HealingAction } from '@/lib/api';
 
 export default function HealingActionsPage() {
-  const [actions, setActions] = useState<HealingAction[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalActions: 0,
-    successful: 0,
-    failed: 0,
-    pending: 0,
-  });
+  const { data, loading, refresh } = useRealtimeData();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const actionData = await apiClient.getHealingActions();
-        setActions(actionData);
+  if (loading || !data) {
+    return (
+      <div className="space-y-8">
+        <div className="animate-pulse space-y-6">
+          <div className="h-20 bg-slate-200 rounded"></div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-40 bg-slate-200 rounded"></div>
+            ))}
+          </div>
+          <div className="h-96 bg-slate-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
 
-        // Calculate stats
-        const successfulCount = actionData.filter(
-          a => a.execution_status === 'SUCCESS'
-        ).length;
-        const failedCount = actionData.filter(
-          a => a.execution_status === 'FAILED'
-        ).length;
-        const pendingCount = actionData.filter(
-          a => a.execution_status === 'PENDING'
-        ).length;
+  const { recentActions, systemMetrics } = data;
 
-        setStats({
-          totalActions: actionData.length,
-          successful: successfulCount,
-          failed: failedCount,
-          pending: pendingCount,
-        });
-      } catch (error) {
-        console.error('Error fetching healing actions:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Calculate real stats from data
+  const successfulCount = recentActions.filter(
+    a => a.execution_status === 'SUCCESS'
+  ).length;
+  const failedCount = recentActions.filter(
+    a => a.execution_status === 'FAILED'
+  ).length;
+  const pendingCount = recentActions.filter(
+    a => a.execution_status === 'PENDING'
+  ).length;
 
-    fetchData();
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  const stats = {
+    totalActions: recentActions.length,
+    successful: successfulCount,
+    failed: failedCount,
+    pending: pendingCount,
+  };
 
   const columns: DataTableColumn<HealingAction>[] = [
     {
@@ -129,13 +122,31 @@ export default function HealingActionsPage() {
     <div className="space-y-8">
       {/* Page Header */}
       <div className="border-b border-slate-200 pb-6">
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">
-          Healing Actions
-        </h1>
-        <p className="text-slate-600">
-          Automated and manual healing actions executed to resolve database
-          issues
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">
+              Healing Actions
+            </h1>
+            <p className="text-slate-600">
+              Automated and manual healing actions executed to resolve database
+              issues
+            </p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${systemMetrics.isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+              <span className="text-sm text-slate-600">
+                {systemMetrics.isConnected ? 'Live Data' : 'Offline'}
+              </span>
+            </div>
+            <button
+              onClick={refresh}
+              className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+            >
+              Refresh
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -171,7 +182,7 @@ export default function HealingActionsPage() {
         title="Action History"
         description="Complete log of all healing actions executed by the system"
       >
-        <DataTable columns={columns} data={actions} loading={loading} />
+        <DataTable columns={columns} data={recentActions} loading={loading} />
       </Section>
 
       {/* Action Analytics */}
@@ -181,13 +192,13 @@ export default function HealingActionsPage() {
           description="Distribution of healing action types"
         >
           <div className="space-y-4">
-            {Array.from(new Set(actions.map(a => a.action_type))).map(
+            {Array.from(new Set(recentActions.map(a => a.action_type))).map(
               actionType => {
-                const count = actions.filter(
+                const count = recentActions.filter(
                   a => a.action_type === actionType
                 ).length;
                 const successRate =
-                  (actions.filter(
+                  (recentActions.filter(
                     a =>
                       a.action_type === actionType &&
                       a.execution_status === 'SUCCESS'
@@ -232,11 +243,11 @@ export default function HealingActionsPage() {
         >
           <div className="space-y-4">
             {['SUCCESS', 'FAILED', 'PENDING', 'IN_PROGRESS'].map(status => {
-              const count = actions.filter(
+              const count = recentActions.filter(
                 a => a.execution_status === status
               ).length;
               const percentage =
-                actions.length > 0 ? (count / actions.length) * 100 : 0;
+                recentActions.length > 0 ? (count / recentActions.length) * 100 : 0;
 
               return (
                 <div
@@ -290,7 +301,7 @@ export default function HealingActionsPage() {
         description="Latest healing actions executed by the system"
       >
         <div className="space-y-4">
-          {actions.slice(0, 5).map(action => (
+          {recentActions.slice(0, 5).map(action => (
             <div
               key={action.action_id}
               className="p-6 bg-white border border-slate-200 rounded-xl"
