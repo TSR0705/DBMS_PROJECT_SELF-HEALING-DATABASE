@@ -134,7 +134,9 @@ export default function HealingActionsPage() {
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${systemMetrics.isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+              <div
+                className={`w-3 h-3 rounded-full ${systemMetrics.isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}
+              ></div>
               <span className="text-sm text-slate-600">
                 {systemMetrics.isConnected ? 'Live Data' : 'Offline'}
               </span>
@@ -247,7 +249,9 @@ export default function HealingActionsPage() {
                 a => a.execution_status === status
               ).length;
               const percentage =
-                recentActions.length > 0 ? (count / recentActions.length) * 100 : 0;
+                recentActions.length > 0
+                  ? (count / recentActions.length) * 100
+                  : 0;
 
               return (
                 <div
