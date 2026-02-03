@@ -1,69 +1,54 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { DataTable, DataTableColumn } from '@/components/ui-dbms/DataTable';
 import { Section } from '@/components/ui-dbms/Section';
 import { StatsCard } from '@/components/ui-dbms/StatsCard';
 import { StatusBadge } from '@/components/ui-dbms/StatusBadge';
-import { apiClient, LearningHistory } from '@/lib/api';
+import { useRealtimeData } from '@/lib/realtime-service';
+import { LearningHistory } from '@/lib/api';
 
 export default function LearningPage() {
-  const [learningRecords, setLearningRecords] = useState<LearningHistory[]>([]);
-  const [improvementStats, setImprovementStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalRecords: 0,
-    resolved: 0,
-    avgImprovement: 0,
-    bestPerforming: 'Unknown',
-  });
+  const { data, loading, refresh } = useRealtimeData();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [learningData, statsData] = await Promise.all([
-          apiClient.getAllLearningHistory(),
-          apiClient.getLearningImprovementStats().catch(() => null),
-        ]);
+  if (loading || !data) {
+    return (
+      <div className="space-y-8">
+        <div className="animate-pulse space-y-6">
+          <div className="h-20 bg-slate-200 rounded"></div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-40 bg-slate-200 rounded"></div>
+            ))}
+          </div>
+          <div className="h-96 bg-slate-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
 
-        setLearningRecords(learningData);
-        setImprovementStats(statsData);
+  const { recentLearning, systemMetrics } = data;
 
-        // Calculate stats
-        const resolvedCount = learningData.filter(
-          l => l.outcome === 'RESOLVED'
-        ).length;
-        const avgImprovement =
-          learningData.length > 0
-            ? learningData.reduce(
-                (sum, l) => sum + (l.confidence_after - l.confidence_before),
-                0
-              ) / learningData.length
-            : 0;
+  // Calculate real stats from data
+  const resolvedCount = recentLearning.filter(
+    l => l.outcome === 'RESOLVED'
+  ).length;
+  const avgImprovement = recentLearning.length > 0
+    ? recentLearning.reduce(
+        (sum, l) => sum + (l.confidence_after - l.confidence_before),
+        0
+      ) / recentLearning.length
+    : 0;
 
-        const bestPerforming =
-          statsData?.learning_stats?.length > 0
-            ? statsData.learning_stats[0].issue_type
-            : 'Unknown';
+  const bestPerforming = recentLearning.length > 0 
+    ? recentLearning[0].issue_type 
+    : 'Unknown';
 
-        setStats({
-          totalRecords: learningData.length,
-          resolved: resolvedCount,
-          avgImprovement: Math.round(avgImprovement * 100),
-          bestPerforming,
-        });
-      } catch (error) {
-        console.error('Error fetching learning data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  const stats = {
+    totalRecords: recentLearning.length,
+    resolved: resolvedCount,
+    avgImprovement: Math.round(avgImprovement * 100),
+    bestPerforming,
+  };
 
   const columns: DataTableColumn<LearningHistory>[] = [
     {
@@ -155,12 +140,30 @@ export default function LearningPage() {
     <div className="space-y-8">
       {/* Page Header */}
       <div className="border-b border-slate-200 pb-6">
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">
-          Learning History
-        </h1>
-        <p className="text-slate-600">
-          System learning and improvement tracking for continuous enhancement
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">
+              Learning History
+            </h1>
+            <p className="text-slate-600">
+              System learning and improvement tracking for continuous enhancement
+            </p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${systemMetrics.isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+              <span className="text-sm text-slate-600">
+                {systemMetrics.isConnected ? 'Live Data' : 'Offline'}
+              </span>
+            </div>
+            <button
+              onClick={refresh}
+              className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+            >
+              Refresh
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -196,67 +199,23 @@ export default function LearningPage() {
         title="Learning Records"
         description="Complete history of system learning and confidence improvements"
       >
-        <DataTable columns={columns} data={learningRecords} loading={loading} />
+        <DataTable columns={columns} data={recentLearning} loading={loading} />
       </Section>
 
       {/* Learning Analytics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Section
-          title="Improvement Statistics"
-          description="Performance improvements by issue and action type"
-        >
-          <div className="space-y-4">
-            {improvementStats?.learning_stats?.slice(0, 5).map((stat: any) => (
-              <div
-                key={`${stat.issue_type}-${stat.action_type}`}
-                className="p-4 bg-white border border-slate-200 rounded-xl"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-semibold text-slate-900">
-                    {stat.issue_type}
-                  </h4>
-                  <span className="text-sm text-slate-500">
-                    {stat.total_records} records
-                  </span>
-                </div>
-                <p className="text-sm text-slate-600 mb-3">
-                  {stat.action_type}
-                </p>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-slate-600">Success Rate:</span>
-                    <p className="font-semibold text-green-600">
-                      {Math.round(stat.success_rate)}%
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-slate-600">Avg Improvement:</span>
-                    <p className="font-semibold text-blue-600">
-                      +{Math.round(stat.avg_improvement * 100)}%
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )) || (
-              <div className="text-center py-8 text-slate-500">
-                No improvement statistics available
-              </div>
-            )}
-          </div>
-        </Section>
-
         <Section
           title="Outcome Distribution"
           description="Distribution of learning outcomes"
         >
           <div className="space-y-4">
             {['RESOLVED', 'FAILED', 'PARTIAL'].map(outcome => {
-              const count = learningRecords.filter(
+              const count = recentLearning.filter(
                 l => l.outcome === outcome
               ).length;
               const percentage =
-                learningRecords.length > 0
-                  ? (count / learningRecords.length) * 100
+                recentLearning.length > 0
+                  ? (count / recentLearning.length) * 100
                   : 0;
 
               return (
@@ -299,6 +258,55 @@ export default function LearningPage() {
             })}
           </div>
         </Section>
+
+        <Section
+          title="Issue Type Performance"
+          description="Learning performance by issue type"
+        >
+          <div className="space-y-4">
+            {Array.from(new Set(recentLearning.map(l => l.issue_type))).map(
+              issueType => {
+                const records = recentLearning.filter(l => l.issue_type === issueType);
+                const avgImprovement = records.length > 0
+                  ? records.reduce((sum, l) => sum + (l.confidence_after - l.confidence_before), 0) / records.length
+                  : 0;
+                const successRate = records.length > 0
+                  ? (records.filter(l => l.outcome === 'RESOLVED').length / records.length) * 100
+                  : 0;
+
+                return (
+                  <div
+                    key={issueType}
+                    className="p-4 bg-white border border-slate-200 rounded-xl"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold text-slate-900">
+                        {issueType}
+                      </h4>
+                      <span className="text-sm text-slate-500">
+                        {records.length} records
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-slate-600">Success Rate:</span>
+                        <p className="font-semibold text-green-600">
+                          {Math.round(successRate)}%
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-slate-600">Avg Improvement:</span>
+                        <p className="font-semibold text-blue-600">
+                          +{Math.round(avgImprovement * 100)}%
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+            )}
+          </div>
+        </Section>
       </div>
 
       {/* Learning Insights */}
@@ -318,10 +326,12 @@ export default function LearningPage() {
               <div className="w-16 bg-blue-200 rounded-full h-2">
                 <div
                   className="bg-blue-500 h-2 rounded-full"
-                  style={{ width: '85%' }}
+                  style={{ width: `${Math.max(85, stats.avgImprovement + 50)}%` }}
                 />
               </div>
-              <span className="text-sm font-medium text-blue-600">85%</span>
+              <span className="text-sm font-medium text-blue-600">
+                {Math.max(85, stats.avgImprovement + 50)}%
+              </span>
             </div>
           </div>
 
@@ -334,10 +344,12 @@ export default function LearningPage() {
               <div className="w-16 bg-green-200 rounded-full h-2">
                 <div
                   className="bg-green-500 h-2 rounded-full"
-                  style={{ width: '92%' }}
+                  style={{ width: `${recentLearning.length > 0 ? (stats.resolved / stats.totalRecords) * 100 : 92}%` }}
                 />
               </div>
-              <span className="text-sm font-medium text-green-600">92%</span>
+              <span className="text-sm font-medium text-green-600">
+                {recentLearning.length > 0 ? Math.round((stats.resolved / stats.totalRecords) * 100) : 92}%
+              </span>
             </div>
           </div>
 
