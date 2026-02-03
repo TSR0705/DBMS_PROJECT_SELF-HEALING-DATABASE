@@ -6,7 +6,7 @@ import type {
   HealingAction,
   AdminReview,
   LearningHistory,
-  HealthCheck
+  HealthCheck,
 } from '../types/dashboard';
 
 const ALLOWED_API_URLS = ['http://localhost:8002', 'https://localhost:8002'];
@@ -252,13 +252,17 @@ class ApiClient {
 
   async getAnalysisById(analysisId: string): Promise<AIAnalysis> {
     const sanitizedId = analysisId.replace(/[^a-zA-Z0-9-_]/g, '');
-    const data = await this.request<APIAnalysisResponse>(`/analysis/${sanitizedId}`);
+    const data = await this.request<APIAnalysisResponse>(
+      `/analysis/${sanitizedId}`
+    );
     return this.processAnalysisData([data])[0];
   }
 
   async getAnalysisByIssue(issueId: string): Promise<AIAnalysis[]> {
     const sanitizedId = issueId.replace(/[^a-zA-Z0-9-_]/g, '');
-    const data = await this.request<APIAnalysisResponse[]>(`/analysis/issue/${sanitizedId}`);
+    const data = await this.request<APIAnalysisResponse[]>(
+      `/analysis/issue/${sanitizedId}`
+    );
     return this.processAnalysisData(data);
   }
 
@@ -270,13 +274,17 @@ class ApiClient {
 
   async getDecisionById(decisionId: string): Promise<DecisionLog> {
     const sanitizedId = decisionId.replace(/[^a-zA-Z0-9-_]/g, '');
-    const data = await this.request<APIDecisionResponse>(`/decisions/${sanitizedId}`);
+    const data = await this.request<APIDecisionResponse>(
+      `/decisions/${sanitizedId}`
+    );
     return this.processDecisionData([data])[0];
   }
 
   async getDecisionsByIssue(issueId: string): Promise<DecisionLog[]> {
     const sanitizedId = issueId.replace(/[^a-zA-Z0-9-_]/g, '');
-    const data = await this.request<APIDecisionResponse[]>(`/decisions/issue/${sanitizedId}`);
+    const data = await this.request<APIDecisionResponse[]>(
+      `/decisions/issue/${sanitizedId}`
+    );
     return this.processDecisionData(data);
   }
 
@@ -334,7 +342,9 @@ class ApiClient {
 
   async getLearningRecordById(learningId: string): Promise<LearningHistory> {
     const sanitizedId = learningId.replace(/[^a-zA-Z0-9-_]/g, '');
-    const data = await this.request<APILearningResponse>(`/learning/${sanitizedId}`);
+    const data = await this.request<APILearningResponse>(
+      `/learning/${sanitizedId}`
+    );
     return this.processLearningData([data])[0];
   }
 
@@ -360,4 +370,11 @@ class ApiClient {
 export const apiClient = new ApiClient();
 
 // Re-export types for component usage
-export type { DetectedIssue, AIAnalysis, DecisionLog, HealingAction, AdminReview, LearningHistory } from '../types/dashboard';
+export type {
+  DetectedIssue,
+  AIAnalysis,
+  DecisionLog,
+  HealingAction,
+  AdminReview,
+  LearningHistory,
+} from '../types/dashboard';

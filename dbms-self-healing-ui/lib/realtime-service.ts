@@ -2,9 +2,7 @@
 // Ensures all components receive live data from the backend
 
 import { apiClient } from './api';
-import type {
-  RealtimeData
-} from '../types/dashboard';
+import type { RealtimeData } from '../types/dashboard';
 
 class RealtimeService {
   private data: RealtimeData | null = null;

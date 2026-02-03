@@ -99,7 +99,9 @@ export default function LearningPage() {
           <div className="w-12 bg-slate-200 rounded-full h-2">
             <div
               className="bg-red-400 h-2 rounded-full"
-              style={{ width: `${typeof value === 'number' ? value * 100 : 0}%` }}
+              style={{
+                width: `${typeof value === 'number' ? value * 100 : 0}%`,
+              }}
             />
           </div>
           <span className="text-xs font-medium">
@@ -116,7 +118,9 @@ export default function LearningPage() {
           <div className="w-12 bg-slate-200 rounded-full h-2">
             <div
               className="bg-green-500 h-2 rounded-full"
-              style={{ width: `${typeof value === 'number' ? value * 100 : 0}%` }}
+              style={{
+                width: `${typeof value === 'number' ? value * 100 : 0}%`,
+              }}
             />
           </div>
           <span className="text-xs font-medium">

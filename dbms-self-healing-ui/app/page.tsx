@@ -29,7 +29,7 @@ export default function LandingPage() {
   useEffect(() => {
     // Set mounted flag after component mounts
     const mountTimer = setTimeout(() => setMounted(true), 0);
-    
+
     // Set up time update interval
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
 

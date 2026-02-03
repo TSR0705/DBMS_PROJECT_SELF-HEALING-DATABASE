@@ -101,7 +101,9 @@ export default function AIAnalysisPage() {
           <div className="w-16 bg-slate-200 rounded-full h-2">
             <div
               className="bg-green-500 h-2 rounded-full"
-              style={{ width: `${typeof value === 'number' ? value * 100 : 0}%` }}
+              style={{
+                width: `${typeof value === 'number' ? value * 100 : 0}%`,
+              }}
             />
           </div>
           <span className="text-sm font-medium">

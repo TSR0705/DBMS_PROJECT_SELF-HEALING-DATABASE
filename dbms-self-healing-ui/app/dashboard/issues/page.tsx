@@ -37,7 +37,9 @@ const issueColumns: DataTableColumn<DetectedIssue>[] = [
                 : 'bg-blue-400'
           }`}
         ></div>
-        <span className="font-semibold">{typeof value === 'string' ? value.replace('_', ' ') : String(value)}</span>
+        <span className="font-semibold">
+          {typeof value === 'string' ? value.replace('_', ' ') : String(value)}
+        </span>
       </div>
     ),
   },
@@ -73,10 +75,14 @@ const issueColumns: DataTableColumn<DetectedIssue>[] = [
     render: value => (
       <div className="text-right">
         <div className="text-xs font-medium text-slate-900">
-          {typeof value === 'string' ? new Date(value).toLocaleDateString() : 'N/A'}
+          {typeof value === 'string'
+            ? new Date(value).toLocaleDateString()
+            : 'N/A'}
         </div>
         <div className="text-xs text-slate-500">
-          {typeof value === 'string' ? new Date(value).toLocaleTimeString() : 'N/A'}
+          {typeof value === 'string'
+            ? new Date(value).toLocaleTimeString()
+            : 'N/A'}
         </div>
       </div>
     ),
