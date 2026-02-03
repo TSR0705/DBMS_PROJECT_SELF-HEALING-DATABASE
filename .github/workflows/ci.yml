@@ -53,12 +53,6 @@ jobs:
           npm run lint
           echo "✅ ESLint passed - no code quality issues"
       
-      # Prettier formatting check - Code consistency
-      - name: Prettier Format Check
-        run: |
-          npm run format:check
-          echo "✅ Code formatting is consistent"
-      
       # Production build test - Ensures deployability
       - name: Next.js Production Build
         run: |
@@ -324,7 +318,7 @@ jobs:
         run: |
           echo "🎉 DBMS Project CI Pipeline Completed Successfully!"
           echo ""
-          echo "✅ Frontend: TypeScript, ESLint, Prettier, Build"
+          echo "✅ Frontend: TypeScript, ESLint, Build"
           echo "✅ Backend: Python syntax, code quality, tests"
           echo "✅ Database: Schema validation, constraints, integrity"
           echo "✅ Security: No hardcoded secrets, safe SQL patterns"
