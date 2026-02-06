@@ -5,7 +5,7 @@ Defines strict type validation for all API endpoints.
 
 from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Any
 from decimal import Decimal
 
 class DetectedIssue(BaseModel):
@@ -155,7 +155,7 @@ class APIResponse(BaseModel):
     """
     success: bool = Field(..., description="Indicates if the request was successful")
     message: str = Field(..., description="Human-readable response message")
-    data: Optional[List[BaseModel]] = Field(None, description="Response data payload")
+    data: Optional[List[Any]] = Field(None, description="Response data payload")
     
 class HealthCheck(BaseModel):
     """
