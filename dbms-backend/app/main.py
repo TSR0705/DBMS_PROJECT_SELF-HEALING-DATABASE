@@ -210,10 +210,10 @@ def get_healing_actions():
 def get_admin_reviews():
     """Get all admin reviews."""
     query = """
-    SELECT review_id, decision_id, admin_action, admin_comment,
-           override_flag, reviewed_at
+    SELECT review_id, decision_id, review_priority, review_status,
+           admin_action, admin_notes, admin_user, reviewed_at, created_at
     FROM admin_reviews 
-    ORDER BY reviewed_at DESC 
+    ORDER BY created_at DESC 
     LIMIT 100
     """
     
