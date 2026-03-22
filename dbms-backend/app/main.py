@@ -7,7 +7,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 import mysql.connector
 from mysql.connector import Error
 from dotenv import load_dotenv
@@ -84,7 +84,7 @@ def root():
         "name": "DBMS Self-Healing API",
         "version": "1.0.0",
         "description": "Read-only API for DBMS self-healing pipeline data",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "status": "operational"
     })
 
@@ -98,13 +98,13 @@ def health_check():
             return jsonify({
                 "status": "healthy",
                 "database_connected": True,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             })
     except Exception as e:
         return jsonify({
             "status": "unhealthy",
             "database_connected": False,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "error": str(e)
         }), 500
 
@@ -127,7 +127,7 @@ def database_health():
         
         return jsonify({
             "status": "connected",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "database_stats": stats
         })
     except Exception as e:
@@ -210,10 +210,10 @@ def get_healing_actions():
 def get_admin_reviews():
     """Get all admin reviews."""
     query = """
-    SELECT review_id, decision_id, review_priority, review_status,
-           admin_action, admin_notes, admin_user, reviewed_at, created_at
+    SELECT review_id, decision_id, admin_action, admin_comment,
+           override_flag, reviewed_at
     FROM admin_reviews 
-    ORDER BY created_at DESC 
+    ORDER BY reviewed_at DESC 
     LIMIT 100
     """
     
