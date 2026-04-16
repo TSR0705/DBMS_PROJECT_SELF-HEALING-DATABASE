@@ -20,10 +20,6 @@ jobs:
     name: Frontend Validation (Next.js + TypeScript)
     runs-on: ubuntu-22.04
     
-    defaults:
-      run:
-        working-directory: ./dbms-self-healing-ui
-    
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -33,28 +29,32 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: './dbms-self-healing-ui/package-lock.json'
+          cache-dependency-path: 'dbms-self-healing-ui/package-lock.json'
       
       # Install dependencies with clean slate for reproducible builds
       - name: Install Dependencies
+        working-directory: dbms-self-healing-ui
         run: |
           npm ci --prefer-offline --no-audit
           echo "✅ Dependencies installed successfully"
       
       # TypeScript compilation check - CRITICAL for type safety
       - name: TypeScript Type Check
+        working-directory: dbms-self-healing-ui
         run: |
           npx tsc --noEmit --pretty
           echo "✅ TypeScript types are valid"
       
       # ESLint check - Code quality and potential bugs
       - name: ESLint Code Quality Check
+        working-directory: dbms-self-healing-ui
         run: |
           npm run lint
           echo "✅ ESLint passed - no code quality issues"
       
       # Production build test - Ensures deployability
       - name: Next.js Production Build
+        working-directory: dbms-self-healing-ui
         run: |
           npm run build
           echo "✅ Production build successful"
@@ -69,10 +69,6 @@ jobs:
     name: Backend Validation (Python + Flask)
     runs-on: ubuntu-22.04
     
-    defaults:
-      run:
-        working-directory: ./dbms-backend
-    
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -82,10 +78,11 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
-          cache-dependency-path: './dbms-backend/requirements.txt'
+          cache-dependency-path: 'dbms-backend/requirements.txt'
       
       # Install Python dependencies
       - name: Install Python Dependencies
+        working-directory: dbms-backend
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
@@ -94,12 +91,14 @@ jobs:
       
       # Python syntax and import validation
       - name: Python Syntax Validation
+        working-directory: dbms-backend
         run: |
           python -m compileall . -f -q
           echo "✅ Python syntax is valid"
       
       # Static code analysis for Python best practices
       - name: Python Code Quality (Flake8)
+        working-directory: dbms-backend
         run: |
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
@@ -107,6 +106,7 @@ jobs:
       
       # Run Python tests (if any exist)
       - name: Python Unit Tests
+        working-directory: dbms-backend
         run: |
           python -m pytest -v --tb=short
           echo "✅ Python tests passed"
