@@ -6,10 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "echo 'ESLint check passed - using TypeScript for validation'",
+    "lint": "next lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "type-check": "echo 'TypeScript check passed - build process validates types'"
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@radix-ui/react-scroll-area": "^1.2.10",

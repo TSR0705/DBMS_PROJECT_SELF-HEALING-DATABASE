@@ -24,14 +24,20 @@ logger = logging.getLogger(__name__)
 
 # Create Flask application
 app = Flask(__name__)
-CORS(app, origins="*", allow_headers="*", methods=["GET", "POST", "OPTIONS"])
+
+# CORS configuration - restrict in production
+allowed_origins = os.getenv('FRONTEND_URL', 'http://localhost:3000').split(',')
+CORS(app, 
+     origins=allowed_origins,
+     allow_headers=["Content-Type", "Authorization"],
+     methods=["GET", "OPTIONS"])
 
 # Database configuration
 DB_CONFIG = {
     'host': os.getenv('DB_HOST', 'localhost'),
     'port': int(os.getenv('DB_PORT', 3306)),
     'user': os.getenv('DB_USER', 'root'),
-    'password': os.getenv('DB_PASSWORD', 'Tsr@2007'),
+    'password': os.getenv('DB_PASSWORD', ''),  # No default - must be set in .env
     'database': os.getenv('DB_NAME', 'dbms_self_healing'),
 }
 
