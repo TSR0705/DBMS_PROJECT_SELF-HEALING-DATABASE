@@ -64,7 +64,9 @@ CREATE TABLE issue_detection_cache (
     last_detected_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY idx_signature (issue_signature),
     KEY idx_time (last_detected_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB;
+-- Note: Removed explicit COLLATE to use database default
+-- This prevents collation mismatch with procedure variables
 
 -- ============================================================================
 -- STEP 4: CREATE DETECTION PROCEDURES
