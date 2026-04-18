@@ -31,7 +31,9 @@ async def get_all_analysis(
         risk_type,
         confidence_score,
         model_version,
-        analyzed_at
+        analyzed_at,
+        baseline_metric,
+        severity_ratio
     FROM ai_analysis 
     ORDER BY analyzed_at DESC
     LIMIT %s
@@ -44,17 +46,24 @@ async def get_all_analysis(
         # Convert results to match Pydantic model
         analyses = []
         for row in results:
-            analysis = AIAnalysis(
-                analysis_id=str(row['analysis_id']),
-                issue_id=str(row['issue_id']),
-                predicted_issue_class=row['predicted_issue_class'],
-                severity_level=row['severity_level'],
-                risk_type=row['risk_type'],
-                confidence_score=row['confidence_score'],
-                model_version=row['model_version'],
-                analyzed_at=row['analyzed_at']
-            )
-            analyses.append(analysis)
+            try:
+                # Use explicit dictionary to bypass Pydantic serialization "exclude" logic
+                analysis = {
+                    "analysis_id": str(row.get('analysis_id', '')),
+                    "issue_id": str(row.get('issue_id', '')),
+                    "predicted_issue_class": str(row.get('predicted_issue_class', 'UNKNOWN')),
+                    "severity_level": str(row.get('severity_level', 'LOW')),
+                    "risk_type": str(row.get('risk_type', 'UNCERTAIN')),
+                    "confidence_score": float(row.get('confidence_score', 0.0)) if row.get('confidence_score') is not None else 0.0,
+                    "model_version": str(row.get('model_version', 'v1.0')),
+                    "analyzed_at": row.get('analyzed_at').isoformat() if hasattr(row.get('analyzed_at'), 'isoformat') else str(row.get('analyzed_at')),
+                    "baseline_metric": float(row.get('baseline_metric', 0.0)) if row.get('baseline_metric') is not None else 0.0,
+                    "severity_ratio": float(row.get('severity_ratio', 0.0)) if row.get('severity_ratio') is not None else 0.0
+                }
+                analyses.append(analysis)
+            except Exception as row_error:
+                logger.warning(f"Skipping malformed row: {row_error}")
+                continue
         
         return analyses
         
@@ -81,7 +90,9 @@ async def get_analysis_by_id(
         risk_type,
         confidence_score,
         model_version,
-        analyzed_at
+        analyzed_at,
+        baseline_metric,
+        severity_ratio
     FROM ai_analysis 
     WHERE analysis_id = %s
     """
@@ -96,7 +107,19 @@ async def get_analysis_by_id(
             )
         
         logger.info(f"Retrieved analysis {analysis_id}")
-        return AIAnalysis(**results[0])
+        row = results[0]
+        return AIAnalysis(
+            analysis_id=str(row['analysis_id']),
+            issue_id=str(row['issue_id']),
+            predicted_issue_class=row['predicted_issue_class'],
+            severity_level=row['severity_level'],
+            risk_type=row['risk_type'],
+            confidence_score=row['confidence_score'],
+            model_version=row['model_version'],
+            analyzed_at=row['analyzed_at'],
+            baseline_metric=row.get('baseline_metric'),
+            severity_ratio=row.get('severity_ratio')
+        )
         
     except HTTPException:
         raise
@@ -123,7 +146,9 @@ async def get_analysis_by_issue(
         risk_type,
         confidence_score,
         model_version,
-        analyzed_at
+        analyzed_at,
+        baseline_metric,
+        severity_ratio
     FROM ai_analysis 
     WHERE issue_id = %s
     ORDER BY analyzed_at DESC
@@ -143,7 +168,9 @@ async def get_analysis_by_issue(
                 risk_type=row['risk_type'],
                 confidence_score=row['confidence_score'],
                 model_version=row['model_version'],
-                analyzed_at=row['analyzed_at']
+                analyzed_at=row['analyzed_at'],
+                baseline_metric=row.get('baseline_metric'),
+                severity_ratio=row.get('severity_ratio')
             )
             analyses.append(analysis)
         
