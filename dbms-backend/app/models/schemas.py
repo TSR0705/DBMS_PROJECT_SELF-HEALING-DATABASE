@@ -111,6 +111,7 @@ class LearningHistory(BaseModel):
     Maps to learning_history table structure.
     """
     learning_id: str = Field(..., description="Unique identifier for the learning record")
+    decision_id: str = Field(..., description="Decision ID this learning record relates to")
     issue_type: str = Field(..., description="Type of issue learned from")
     action_type: str = Field(..., description="Type of action taken")
     outcome: str = Field(..., description="Outcome of the action")

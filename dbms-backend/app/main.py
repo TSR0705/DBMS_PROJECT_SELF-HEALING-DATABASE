@@ -8,6 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 import os
 from dotenv import load_dotenv
+from datetime import datetime, date
+from typing import Any, List, Dict
 
 # Load environment variables
 load_dotenv()
@@ -18,6 +20,30 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Import database connection
+from .database.connection import db
+
+# Global exports for testing
+DB_CONFIG = db.config
+
+def serialize_datetime(value: Any) -> Any:
+    """Serialize datetime objects to ISO format strings."""
+    if isinstance(value, datetime):
+        return value.isoformat()
+    elif isinstance(value, date):
+        return value.isoformat()
+    return value
+
+def process_results(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Process database results, serializing datetime fields."""
+    processed = []
+    for row in results:
+        processed_row = {}
+        for key, value in row.items():
+            processed_row[key] = serialize_datetime(value)
+        processed.append(processed_row)
+    return processed
 
 # Import routers
 from .routers import (

@@ -27,6 +27,7 @@ async def get_all_learning_history(
     base_query = """
     SELECT 
         learning_id,
+        decision_id,
         issue_type,
         action_type,
         outcome,
@@ -62,6 +63,7 @@ async def get_all_learning_history(
         for row in results:
             record = LearningHistory(
                 learning_id=str(row['learning_id']),
+                decision_id=str(row['decision_id']),
                 issue_type=row['issue_type'],
                 action_type=row['action_type'],
                 outcome=row['outcome'],
@@ -90,6 +92,7 @@ async def get_learning_record_by_id(
     query = """
     SELECT 
         learning_id,
+        decision_id,
         issue_type,
         action_type,
         outcome,
