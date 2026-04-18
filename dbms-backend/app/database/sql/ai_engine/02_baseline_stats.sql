@@ -1,3 +1,6 @@
+/*!40101 SET NAMES utf8mb4 */;
+SET collation_connection = 'utf8mb4_unicode_ci';
+
 DELIMITER //
 
 DROP PROCEDURE IF EXISTS compute_baseline//
@@ -26,7 +29,7 @@ BEGIN
     INTO p_avg, p_std, p_min, p_max
     FROM detected_issues d
     LEFT JOIN ai_analysis a ON d.issue_id = a.issue_id
-    WHERE BINARY d.issue_type = BINARY p_issue_type
+    WHERE d.issue_type COLLATE utf8mb4_unicode_ci = CONVERT(p_issue_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
       AND d.detected_at >= (NOW() - INTERVAL 24 HOUR)
       AND d.issue_id != p_issue_id
       AND (a.severity_level != 'CRITICAL' OR a.severity_level IS NULL)
@@ -42,7 +45,7 @@ BEGIN
                PERCENT_RANK() OVER (ORDER BY COALESCE(d.raw_metric_value, 0)) as pct
         FROM detected_issues d
         LEFT JOIN ai_analysis a ON d.issue_id = a.issue_id
-        WHERE BINARY d.issue_type = BINARY p_issue_type
+        WHERE d.issue_type COLLATE utf8mb4_unicode_ci = CONVERT(p_issue_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
           AND d.detected_at >= (NOW() - INTERVAL 24 HOUR)
           AND d.issue_id != p_issue_id
           AND (a.severity_level != 'CRITICAL' OR a.severity_level IS NULL)
@@ -61,7 +64,7 @@ BEGIN
     SELECT COUNT(*) INTO p_recent_anomalies
     FROM detected_issues d
     INNER JOIN ai_analysis a ON d.issue_id = a.issue_id
-    WHERE BINARY d.issue_type = BINARY p_issue_type
+    WHERE d.issue_type COLLATE utf8mb4_unicode_ci = CONVERT(p_issue_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
       AND d.detected_at >= (NOW() - INTERVAL 2 HOUR)
       AND a.severity_level IN ('HIGH', 'CRITICAL');
 
