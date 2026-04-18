@@ -48,10 +48,6 @@ class DatabaseConnection:
         try:
             connection = mysql.connector.connect(**self.config)
             if connection.is_connected():
-                # Set session to read-only for additional safety
-                cursor = connection.cursor()
-                cursor.execute("SET SESSION TRANSACTION READ ONLY")
-                cursor.close()
                 yield connection
             else:
                 raise Error("Failed to establish database connection")
@@ -114,6 +110,23 @@ class DatabaseConnection:
                 return True
         except Error:
             return False
+
+    def execute_write_query(self, query: str, params: Optional[tuple] = None) -> int:
+        """
+        Execute write SQL query and return rows affected.
+        """
+        with self.get_connection() as connection:
+            cursor = connection.cursor()
+            try:
+                cursor.execute(query, params)
+                connection.commit()
+                return cursor.rowcount
+            except Exception as e:
+                connection.rollback()
+                logger.error(f"Write query failed: {e}")
+                raise
+            finally:
+                cursor.close()
 
 # Global database instance
 db = DatabaseConnection()
