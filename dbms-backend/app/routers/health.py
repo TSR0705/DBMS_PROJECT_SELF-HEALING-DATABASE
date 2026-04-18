@@ -53,9 +53,10 @@ async def get_database_health():
         response_time_ms = (end_time - start_time).total_seconds() * 1000
         
         return {
-            "database_status": "connected",
-            "response_time_ms": round(response_time_ms, 2),
-            "database_time": result[0]["db_time"] if result else None,
+            "status": "connected",
+            "database_stats": {
+                "response_time_ms": round(response_time_ms, 2)
+            },
             "timestamp": datetime.utcnow().isoformat()
         }
         
