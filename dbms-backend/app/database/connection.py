@@ -1,132 +1,118 @@
 """
 Database connection management for DBMS self-healing system.
-Provides read-only access to existing DBMS pipeline tables.
+Uses a connection pool for efficient, low-latency access.
 """
 
 import os
 import mysql.connector
-from mysql.connector import Error
+from mysql.connector import Error, pooling
 from typing import Optional, List, Dict, Any
-from contextlib import contextmanager
 import logging
 
 logger = logging.getLogger(__name__)
 
 class DatabaseConnection:
     """
-    Manages MySQL connections for read-only access to DBMS pipeline data.
-    Ensures safe, read-only operations with proper connection handling.
+    Manages a MySQL connection pool for DBMS pipeline data.
+    Uses pooling to eliminate per-request connection overhead.
     """
-    
+
     def __init__(self):
-        # Load environment variables
         from dotenv import load_dotenv
         load_dotenv()
-        
+
+        self._pool: Optional[pooling.MySQLConnectionPool] = None
         self.config = {
             'host': os.getenv('DB_HOST', 'localhost'),
             'port': int(os.getenv('DB_PORT', 3306)),
             'user': os.getenv('DB_USER', 'root'),
             'password': os.getenv('DB_PASSWORD', ''),
             'database': os.getenv('DB_NAME'),
-            'autocommit': False,  # Explicit transaction control
-            'use_pure': True,     # Pure Python implementation for safety
+            'autocommit': False,
+            'use_pure': True,
         }
-        
-        # Debug: Print config (without password)
+
         debug_config = self.config.copy()
         debug_config['password'] = '*' * len(debug_config['password']) if debug_config['password'] else 'EMPTY'
         logger.info(f"Database config: {debug_config}")
-        
-    @contextmanager
-    def get_connection(self):
-        """
-        Context manager for database connections.
-        Ensures proper connection cleanup and error handling.
-        """
-        connection = None
+        self._init_pool()
+
+    def _init_pool(self):
+        """Initialize connection pool (size=5) so connections are reused."""
         try:
-            connection = mysql.connector.connect(**self.config)
-            if connection.is_connected():
-                yield connection
-            else:
-                raise Error("Failed to establish database connection")
-                
+            self._pool = pooling.MySQLConnectionPool(
+                pool_name='dbms_pool',
+                pool_size=5,
+                **self.config
+            )
+            logger.info("Connection pool initialized (size=5)")
         except Error as e:
-            logger.error(f"Database connection error: {e}")
-            raise
-        finally:
-            if connection and connection.is_connected():
-                connection.close()
-    
+            logger.error(f"Failed to create connection pool: {e}")
+            self._pool = None
+
+    def _get_conn(self):
+        """Get a connection from the pool, falling back to direct connect."""
+        if self._pool:
+            return self._pool.get_connection()
+        return mysql.connector.connect(**self.config)
+
     def execute_read_query(self, query: str, params: Optional[tuple] = None) -> List[Dict[str, Any]]:
         """
-        Execute read-only SQL query and return results as list of dictionaries.
-        
-        Args:
-            query: SQL SELECT query (validated to be read-only)
-            params: Query parameters for safe parameterization
-            
-        Returns:
-            List of dictionaries representing query results
-            
-        Raises:
-            ValueError: If query contains non-SELECT operations
-            Error: Database connection or execution errors
+        Execute a read SQL query and return results as list of dicts.
+        Only SELECT/SHOW/DESCRIBE/EXPLAIN are permitted.
         """
-        # Validate query is read-only (basic safety check)
         query_upper = query.strip().upper()
         allowed_starts = ['SELECT', 'SHOW', 'DESCRIBE', 'EXPLAIN']
-        
-        if not any(query_upper.startswith(start) for start in allowed_starts):
+        if not any(query_upper.startswith(s) for s in allowed_starts):
             raise ValueError("Only SELECT, SHOW, DESCRIBE, and EXPLAIN queries are allowed")
-        
-        # Additional safety: check for dangerous keywords
+
         dangerous_keywords = ['INSERT', 'UPDATE', 'DELETE', 'DROP', 'CREATE', 'ALTER', 'TRUNCATE']
-        for keyword in dangerous_keywords:
-            if keyword in query_upper:
-                raise ValueError(f"Query contains forbidden keyword: {keyword}")
-        
-        with self.get_connection() as connection:
-            cursor = connection.cursor(dictionary=True)
-            try:
-                cursor.execute(query, params)
-                results = cursor.fetchall()
-                return results
-            finally:
-                cursor.close()
-    
-    def test_connection(self) -> bool:
-        """
-        Test database connectivity.
-        Returns True if connection successful, False otherwise.
-        """
+        for kw in dangerous_keywords:
+            if kw in query_upper:
+                raise ValueError(f"Query contains forbidden keyword: {kw}")
+
+        conn = self._get_conn()
         try:
-            with self.get_connection() as connection:
-                cursor = connection.cursor()
-                cursor.execute("SELECT 1")
-                cursor.fetchone()
-                cursor.close()
-                return True
-        except Error:
-            return False
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(query, params)
+            results = cursor.fetchall()
+            cursor.close()
+            return results
+        finally:
+            conn.close()  # returns to pool if pooled
 
     def execute_write_query(self, query: str, params: Optional[tuple] = None) -> int:
         """
-        Execute write SQL query and return rows affected.
+        Execute a write SQL query and return rows affected.
         """
-        with self.get_connection() as connection:
-            cursor = connection.cursor()
-            try:
-                cursor.execute(query, params)
-                connection.commit()
-                return cursor.rowcount
-            except Exception as e:
-                connection.rollback()
-                logger.error(f"Write query failed: {e}")
-                raise
-            finally:
-                cursor.close()
+        conn = self._get_conn()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(query, params)
+            conn.commit()
+            rows = cursor.rowcount
+            cursor.close()
+            return rows
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Write query failed: {e}")
+            raise
+        finally:
+            conn.close()  # returns to pool if pooled
+
+    def test_connection(self) -> bool:
+        """Test database connectivity."""
+        try:
+            conn = self._get_conn()
+            cursor = conn.cursor()
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+            cursor.close()
+            conn.close()
+            return True
+        except Error:
+            return False
+
 
 # Global database instance
 db = DatabaseConnection()

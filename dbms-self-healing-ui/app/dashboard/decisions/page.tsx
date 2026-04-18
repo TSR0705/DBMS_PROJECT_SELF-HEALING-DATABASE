@@ -52,8 +52,9 @@ export default function DecisionsPage() {
     {
       key: 'decision_id',
       header: 'Decision ID',
+      className: 'w-28',
       render: value => (
-        <span className="font-mono text-sm bg-slate-100 px-2 py-1 rounded">
+        <span className="font-mono text-xs bg-slate-100 px-2 py-1 rounded">
           #{value}
         </span>
       ),
@@ -61,13 +62,15 @@ export default function DecisionsPage() {
     {
       key: 'issue_id',
       header: 'Issue ID',
+      className: 'w-24',
       render: value => (
-        <span className="font-mono text-sm text-blue-600">#{value}</span>
+        <span className="font-mono text-sm font-bold text-blue-600">#{value}</span>
       ),
     },
     {
       key: 'decision_type',
       header: 'Decision Type',
+      className: 'w-40',
       render: value => {
         const variant =
           value === 'AUTO_HEAL'
@@ -81,40 +84,46 @@ export default function DecisionsPage() {
     {
       key: 'decision_reason',
       header: 'Reason',
+      className: 'min-w-[260px]',
       render: value => (
-        <div className="max-w-xs">
-          <p className="text-sm text-slate-700 truncate" title={String(value)}>
-            {String(value)}
-          </p>
-        </div>
+        <p className="text-sm text-slate-700 leading-snug line-clamp-2" title={String(value)}>
+          {String(value)}
+        </p>
       ),
     },
     {
       key: 'confidence_at_decision',
       header: 'Confidence',
-      render: value => (
-        <div className="flex items-center space-x-2">
-          <div className="w-16 bg-slate-200 rounded-full h-2">
-            <div
-              className="bg-blue-500 h-2 rounded-full"
-              style={{
-                width: `${typeof value === 'number' ? value * 100 : 0}%`,
-              }}
-            />
+      className: 'w-40',
+      render: value => {
+        const pct = typeof value === 'number' ? Math.round(value * 100) : 0;
+        const color = pct >= 70 ? 'bg-green-500' : pct >= 30 ? 'bg-amber-500' : 'bg-red-400';
+        return (
+          <div className="flex items-center space-x-3">
+            <div className="w-24 bg-slate-200 rounded-full h-2 flex-shrink-0">
+              <div
+                className={`${color} h-2 rounded-full transition-all`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <span className="text-sm font-bold tabular-nums w-10 text-right">{pct}%</span>
           </div>
-          <span className="text-sm font-medium">
-            {typeof value === 'number' ? Math.round(value * 100) : 0}%
-          </span>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: 'decided_at',
       header: 'Decided At',
+      className: 'w-44',
       render: value => (
-        <span className="text-sm text-slate-500">
-          {new Date(value).toLocaleString()}
-        </span>
+        <div>
+          <div className="text-xs font-semibold text-slate-800">
+            {new Date(value).toLocaleDateString()}
+          </div>
+          <div className="text-[11px] text-slate-500">
+            {new Date(value).toLocaleTimeString()}
+          </div>
+        </div>
       ),
     },
   ];

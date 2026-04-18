@@ -49,52 +49,63 @@ export default function HealingActionsPage() {
   const columns: DataTableColumn<HealingAction>[] = [
     {
       key: 'action_id',
-      header: 'Action ID',
+      header: 'ID',
+      className: 'w-20',
       render: value => (
-        <span className="font-mono text-sm bg-slate-100 px-2 py-1 rounded">
+        <span className="font-mono text-xs bg-slate-100 px-2 py-1 rounded">
           #{value}
         </span>
       ),
     },
     {
       key: 'decision_id',
-      header: 'Decision ID',
+      header: 'Decision',
+      className: 'w-20',
       render: value => (
-        <span className="font-mono text-sm text-purple-600">#{value}</span>
+        <span className="font-mono text-xs text-purple-600 font-bold">#{value}</span>
       ),
     },
     {
       key: 'action_type',
       header: 'Action Type',
+      className: 'w-48',
       render: value => (
-        <span className="font-semibold text-slate-900 bg-blue-50 px-2 py-1 rounded">
-          {value}
+        <span className="font-semibold text-sm text-slate-800 tracking-tight">
+          {String(value).replace(/_/g, ' ')}
         </span>
       ),
     },
     {
       key: 'execution_mode',
       header: 'Mode',
+      className: 'w-36',
       render: value => (
         <span
-          className={`text-xs px-2 py-1 rounded-full ${
+          className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border shadow-sm tracking-tight ${
             value === 'AUTOMATIC'
-              ? 'bg-green-100 text-green-700'
-              : 'bg-orange-100 text-orange-700'
+              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+              : 'bg-amber-50 text-amber-700 border-amber-200'
           }`}
         >
-          {value}
+          {String(value).replace(/_/g, ' ')}
         </span>
       ),
     },
     {
       key: 'executed_by',
-      header: 'Executed By',
-      render: value => <span className="text-sm text-slate-600">{value}</span>,
+      header: 'Actor',
+      className: 'w-32',
+      render: value => (
+        <span className="text-[11px] font-semibold text-slate-500 uppercase flex items-center">
+          <div className={`w-1.5 h-1.5 rounded-full mr-2 ${value === 'SYSTEM' ? 'bg-blue-400' : 'bg-purple-400'}`}></div>
+          {value}
+        </span>
+      ),
     },
     {
       key: 'execution_status',
       header: 'Status',
+      className: 'w-32',
       render: value => {
         const variant =
           value === 'SUCCESS'
@@ -110,10 +121,16 @@ export default function HealingActionsPage() {
     {
       key: 'executed_at',
       header: 'Executed At',
+      className: 'w-44',
       render: value => (
-        <span className="text-sm text-slate-500">
-          {new Date(value).toLocaleString()}
-        </span>
+        <div>
+          <div className="text-xs font-semibold text-slate-800">
+            {new Date(value).toLocaleDateString()}
+          </div>
+          <div className="text-[11px] text-slate-500">
+            {new Date(value).toLocaleTimeString()}
+          </div>
+        </div>
       ),
     },
   ];

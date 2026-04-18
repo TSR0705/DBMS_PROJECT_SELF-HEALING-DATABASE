@@ -11,11 +11,11 @@ import type { DetectedIssue } from '@/lib/api';
 const issueColumns: DataTableColumn<DetectedIssue>[] = [
   {
     key: 'issue_id',
-    header: 'Issue ID',
-    className: 'font-mono text-xs text-slate-600 font-medium',
+    header: 'ID',
+    className: 'w-20 font-mono text-xs text-slate-600 font-medium',
     render: value => (
       <div className="flex items-center space-x-2">
-        <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+        <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse shrink-0"></div>
         <span className="bg-slate-100 px-2 py-1 rounded-md text-xs font-mono">
           #{value}
         </span>
@@ -25,11 +25,11 @@ const issueColumns: DataTableColumn<DetectedIssue>[] = [
   {
     key: 'issue_type',
     header: 'Issue Type',
-    className: 'font-semibold text-slate-900',
+    className: 'w-48 font-semibold text-slate-900',
     render: value => (
       <div className="flex items-center space-x-2">
         <div
-          className={`w-3 h-3 rounded-full ${
+          className={`w-2.5 h-2.5 rounded-full shrink-0 ${
             value === 'SLOW_QUERY'
               ? 'bg-yellow-400'
               : value === 'DEADLOCK'
@@ -37,7 +37,7 @@ const issueColumns: DataTableColumn<DetectedIssue>[] = [
                 : 'bg-blue-400'
           }`}
         ></div>
-        <span className="font-semibold">
+        <span className="font-semibold text-sm">
           {typeof value === 'string' ? value.replace('_', ' ') : String(value)}
         </span>
       </div>
@@ -45,12 +45,12 @@ const issueColumns: DataTableColumn<DetectedIssue>[] = [
   },
   {
     key: 'detection_source',
-    header: 'Detection Source',
-    className: 'text-slate-700',
+    header: 'Source',
+    className: 'w-32 text-slate-700',
     render: value => (
       <Badge
         variant="secondary"
-        className="bg-blue-50 text-blue-700 border-blue-200"
+        className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] uppercase font-bold"
       >
         {value}
       </Badge>
@@ -58,31 +58,36 @@ const issueColumns: DataTableColumn<DetectedIssue>[] = [
   },
   {
     key: 'raw_metric_value',
-    header: 'Metric Value',
-    className: 'font-mono text-xs text-slate-600',
-    render: value => (
-      <div className="text-right">
-        <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent font-bold">
+    header: 'Metric',
+    className: 'w-44 font-mono text-xs text-slate-600',
+    render: (value, row) => (
+      <div className="flex flex-col">
+        <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent font-bold text-sm tabular-nums">
           {value !== null ? Number(value).toFixed(2) : 'N/A'}
         </span>
+        {row.raw_metric_unit && (
+          <span className="text-[10px] text-slate-400 uppercase tracking-tighter">
+            {row.raw_metric_unit}
+          </span>
+        )}
       </div>
     ),
   },
   {
     key: 'detected_at',
-    header: 'Detection Time',
-    className: 'font-mono text-xs text-slate-600',
+    header: 'Detected At',
+    className: 'w-44 font-mono text-xs text-slate-600',
     render: value => (
-      <div className="text-right">
-        <div className="text-xs font-medium text-slate-900">
+      <div>
+        <div className="text-xs font-semibold text-slate-800">
           {typeof value === 'string'
             ? new Date(value).toLocaleDateString()
             : 'N/A'}
         </div>
-        <div className="text-xs text-slate-500">
+        <div className="text-[11px] text-slate-500">
           {typeof value === 'string'
             ? new Date(value).toLocaleTimeString()
-            : 'N/A'}
+            : ''}
         </div>
       </div>
     ),

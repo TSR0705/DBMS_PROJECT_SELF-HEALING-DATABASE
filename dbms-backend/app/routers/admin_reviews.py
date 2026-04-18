@@ -1,6 +1,6 @@
 """
 Admin Reviews API router for DBMS self-healing pipeline.
-Provides read-only access to admin review data.
+Provides access to manage and query admin review records.
 """
 
 from fastapi import APIRouter, HTTPException, Path, Query
@@ -176,3 +176,61 @@ async def get_reviews_by_decision(
             status_code=500, 
             detail="Failed to retrieve admin review records from database"
         )
+
+@router.post("/{review_id}/approve")
+async def approve_review(
+    review_id: str = Path(..., description="Review ID to approve")
+):
+    """
+    Approve an admin review and trigger the associated healing action.
+    """
+    try:
+        # We need the decision_id for the procedure call
+        # Since the procedure takes p_decision_id
+        check_query = "SELECT decision_id FROM admin_reviews WHERE review_id = %s"
+        result = db.execute_read_query(check_query, (review_id,))
+        
+        if not result:
+            raise HTTPException(status_code=404, detail="Review not found")
+            
+        decision_id = result[0]['decision_id']
+        
+        # Call the stored procedure
+        db.execute_write_query("CALL process_admin_review(%s, 'APPROVE')", (decision_id,))
+        
+        logger.info(f"Successfully approved review {review_id} (Decision {decision_id})")
+        return {"status": "success", "message": f"Review {review_id} approved and healing triggered."}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to approve review {review_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{review_id}/reject")
+async def reject_review(
+    review_id: str = Path(..., description="Review ID to reject")
+):
+    """
+    Reject an admin review and close the issue without healing.
+    """
+    try:
+        check_query = "SELECT decision_id FROM admin_reviews WHERE review_id = %s"
+        result = db.execute_read_query(check_query, (review_id,))
+        
+        if not result:
+            raise HTTPException(status_code=404, detail="Review not found")
+            
+        decision_id = result[0]['decision_id']
+        
+        # Call the stored procedure
+        db.execute_write_query("CALL process_admin_review(%s, 'REJECT')", (decision_id,))
+        
+        logger.info(f"Successfully rejected review {review_id} (Decision {decision_id})")
+        return {"status": "success", "message": f"Review {review_id} rejected."}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to reject review {review_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

@@ -30,11 +30,12 @@ export default function AdminReviewPage() {
 
   // Calculate real stats from data
   const approvedCount = recentReviews.filter(
-    r => r.admin_action === 'APPROVED'
+    r => r.review_status === 'APPROVED'
   ).length;
-  const rejectedCount = recentReviews.filter(
-    r => r.admin_action === 'REJECTED'
-  ).length;
+  const rejectedCount = {
+    total: recentReviews.filter(r => r.review_status === 'REJECTED').length,
+    list: recentReviews.filter(r => r.review_status === 'REJECTED')
+  };
   const overriddenCount = recentReviews.filter(
     r => r.override_flag === true
   ).length;
@@ -42,74 +43,104 @@ export default function AdminReviewPage() {
   const stats = {
     totalReviews: recentReviews.length,
     approved: approvedCount,
-    rejected: rejectedCount,
+    rejected: rejectedCount.total,
     overridden: overriddenCount,
   };
 
   const columns: DataTableColumn<AdminReview>[] = [
     {
       key: 'review_id',
-      header: 'Review ID',
+      header: 'ID',
+      className: 'w-20',
       render: value => (
-        <span className="font-mono text-sm bg-slate-100 px-2 py-1 rounded">
+        <span className="font-mono text-xs bg-slate-100 px-2 py-1 rounded">
           #{value}
         </span>
       ),
     },
     {
-      key: 'decision_id',
-      header: 'Decision ID',
+      key: 'issue_id',
+      header: 'Issue',
+      className: 'w-20',
       render: value => (
-        <span className="font-mono text-sm text-purple-600">#{value}</span>
+        <span className="font-mono text-xs text-blue-600 font-bold">#{value}</span>
       ),
     },
     {
-      key: 'admin_action',
-      header: 'Admin Action',
-      render: value => {
+      key: 'issue_type',
+      header: 'Type',
+      className: 'w-36',
+      render: value => (
+        <span className="text-[11px] font-bold text-slate-700 bg-slate-50 border px-2 py-0.5 rounded uppercase leading-tight">
+          {String(value || 'Unknown').replace(/_/g, ' ')}
+        </span>
+      ),
+    },
+    {
+      key: 'action_type',
+      header: 'Proposed',
+      className: 'w-44',
+      render: value => (
+        <span className="text-[11px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded uppercase leading-tight">
+          {String(value || 'None').replace(/_/g, ' ')}
+        </span>
+      ),
+    },
+    {
+      key: 'review_status',
+      header: 'Status',
+      className: 'w-36',
+      render: (value) => {
+        const status = (value || 'PENDING').toUpperCase();
         const variant =
-          value === 'APPROVED'
+          status === 'APPROVED'
             ? 'success'
-            : value === 'REJECTED'
+            : status === 'REJECTED'
               ? 'error'
               : 'warning';
-        return <StatusBadge status={String(value)} variant={variant} />;
+        return <StatusBadge status={status} variant={variant} />;
       },
     },
     {
       key: 'admin_comment',
       header: 'Comment',
+      className: 'min-w-[200px]',
       render: value => (
-        <div className="max-w-xs">
-          <p
-            className="text-sm text-slate-700 truncate"
-            title={String(value || 'No comment')}
-          >
-            {String(value || 'No comment provided')}
-          </p>
-        </div>
+        <p
+          className="text-xs text-slate-600 leading-relaxed line-clamp-2"
+          title={String(value || 'No comment')}
+        >
+          {String(value || '—')}
+        </p>
       ),
     },
     {
       key: 'override_flag',
       header: 'Override',
+      className: 'w-24',
       render: value => (
         <span
-          className={`text-xs px-2 py-1 rounded-full ${
-            value ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+          className={`text-[10px] font-bold px-2 py-1 rounded-full ${
+            value ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-slate-100 text-slate-500'
           }`}
         >
-          {value ? 'YES' : 'NO'}
+          {value ? 'OVERRIDE' : 'NORMAL'}
         </span>
       ),
     },
     {
       key: 'reviewed_at',
-      header: 'Reviewed At',
+      header: 'Date',
+      className: 'w-44',
       render: value => (
-        <span className="text-sm text-slate-500">
-          {typeof value === 'string' ? new Date(value).toLocaleString() : 'N/A'}
-        </span>
+        <div>
+          <div className="text-xs font-semibold text-slate-800">
+            {new Date(value).toLocaleDateString()}
+          </div>
+          <div className="text-[11px] text-slate-500">
+            {new Date(value).toLocaleTimeString()}
+          </div>
+        </div>
       ),
     },
   ];
@@ -216,9 +247,9 @@ export default function AdminReviewPage() {
           description="Distribution of administrative actions"
         >
           <div className="space-y-4">
-            {['APPROVED', 'REJECTED', 'ESCALATED'].map(action => {
+            {['APPROVED', 'REJECTED', 'PENDING'].map(action => {
               const count = recentReviews.filter(
-                r => r.admin_action === action
+                r => (r.review_status || 'PENDING') === action
               ).length;
               const percentage =
                 recentReviews.length > 0
@@ -282,11 +313,12 @@ export default function AdminReviewPage() {
                       #{review.review_id}
                     </span>
                     <StatusBadge
-                      status={review.admin_action}
+                      status={review.review_status === 'APPROVED' ? 'APPROVED' : 
+                             review.review_status === 'REJECTED' ? 'REJECTED' : 'PENDING'}
                       variant={
-                        review.admin_action === 'APPROVED'
+                        review.review_status === 'APPROVED'
                           ? 'success'
-                          : review.admin_action === 'REJECTED'
+                          : review.review_status === 'REJECTED'
                             ? 'error'
                             : 'warning'
                       }
