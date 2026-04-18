@@ -1,3 +1,5 @@
+/*!40101 SET NAMES utf8mb4 */;
+SET collation_connection = 'utf8mb4_unicode_ci';
 DELIMITER //
 
 DROP PROCEDURE IF EXISTS get_issue_features//
