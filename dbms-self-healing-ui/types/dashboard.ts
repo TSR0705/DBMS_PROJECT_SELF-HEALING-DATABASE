@@ -57,6 +57,7 @@ export interface AdminReview {
 
 export interface LearningHistory {
   learning_id: string;
+  decision_id: string;
   issue_type: string;
   action_type: string;
   outcome: string;

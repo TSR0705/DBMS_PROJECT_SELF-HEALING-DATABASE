@@ -24,18 +24,20 @@ async def get_all_admin_reviews(
     """
     query = """
     SELECT 
-        review_id,
-        decision_id,
-        issue_id,
-        admin_action as review_status,
-        issue_type,
-        action_type,
-        admin_action,
-        admin_comment,
-        override_flag,
-        reviewed_at
-    FROM admin_reviews 
-    ORDER BY review_id DESC
+        ar.review_id,
+        ar.decision_id,
+        di.issue_id,
+        ar.admin_action as review_status,
+        di.issue_type,
+        dl.decision_type as action_type,
+        ar.admin_action,
+        ar.admin_comment,
+        ar.override_flag,
+        ar.reviewed_at
+    FROM admin_reviews ar
+    JOIN decision_log dl ON ar.decision_id = dl.decision_id
+    JOIN detected_issues di ON dl.issue_id = di.issue_id
+    ORDER BY ar.review_id DESC
     LIMIT %s
     """
     
@@ -50,7 +52,7 @@ async def get_all_admin_reviews(
                 review_id=str(row['review_id']),
                 decision_id=str(row['decision_id']),
                 issue_id=str(row['issue_id']),
-                review_status=row['review_status'],
+                review_status=row['admin_action'],
                 issue_type=row['issue_type'],
                 action_type=row['action_type'],
                 admin_action=row['admin_action'],
@@ -78,18 +80,20 @@ async def get_admin_review_by_id(
     """
     query = """
     SELECT 
-        review_id,
-        decision_id,
-        issue_id,
-        admin_action as review_status,
-        issue_type,
-        action_type,
-        admin_action,
-        admin_comment,
-        override_flag,
-        reviewed_at
-    FROM admin_reviews 
-    WHERE review_id = %s
+        ar.review_id,
+        ar.decision_id,
+        di.issue_id,
+        ar.admin_action as review_status,
+        di.issue_type,
+        dl.decision_type as action_type,
+        ar.admin_action,
+        ar.admin_comment,
+        ar.override_flag,
+        ar.reviewed_at
+    FROM admin_reviews ar
+    JOIN decision_log dl ON ar.decision_id = dl.decision_id
+    JOIN detected_issues di ON dl.issue_id = di.issue_id
+    WHERE ar.review_id = %s
     """
     
     try:
@@ -106,7 +110,7 @@ async def get_admin_review_by_id(
             review_id=str(results[0]['review_id']),
             decision_id=str(results[0]['decision_id']),
             issue_id=str(results[0]['issue_id']),
-            review_status=results[0]['review_status'],
+            review_status=results[0]['admin_action'],
             issue_type=results[0]['issue_type'],
             action_type=results[0]['action_type'],
             admin_action=results[0]['admin_action'],

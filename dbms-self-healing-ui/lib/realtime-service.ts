@@ -280,10 +280,13 @@ class RealtimeService {
         this.data = {
           systemMetrics: {
             totalIssues: 0,
+            criticalIssues: 0,
             totalAnalysis: 0,
             totalDecisions: 0,
             totalActions: 0,
+            autoHealedCount: 0,
             totalReviews: 0,
+            pendingReviews: 0,
             totalLearning: 0,
             isConnected: false,
             lastUpdate: new Date(),
@@ -300,6 +303,7 @@ class RealtimeService {
           recentDecisions: [],
           recentLearning: [],
           recentReviews: [],
+          recentEvents: [],
         };
       } else {
         // Update existing data with error status

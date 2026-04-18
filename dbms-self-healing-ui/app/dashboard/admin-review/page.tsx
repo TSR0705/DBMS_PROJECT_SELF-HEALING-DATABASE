@@ -91,7 +91,7 @@ export default function AdminReviewPage() {
       header: 'Status',
       className: 'w-36',
       render: (value) => {
-        const status = (value || 'PENDING').toUpperCase();
+        const status = String(value || 'PENDING').toUpperCase();
         const variant =
           status === 'APPROVED'
             ? 'success'
@@ -135,10 +135,10 @@ export default function AdminReviewPage() {
       render: value => (
         <div>
           <div className="text-xs font-semibold text-slate-800">
-            {new Date(value).toLocaleDateString()}
+            {typeof value === 'string' ? new Date(value).toLocaleDateString() : 'Not reviewed'}
           </div>
           <div className="text-[11px] text-slate-500">
-            {new Date(value).toLocaleTimeString()}
+            {typeof value === 'string' ? new Date(value).toLocaleTimeString() : ''}
           </div>
         </div>
       ),

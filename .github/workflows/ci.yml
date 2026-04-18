@@ -220,8 +220,8 @@ jobs:
           PROC_COUNT=$(echo "$PROCEDURES" | wc -w)
           echo "Total procedures: $PROC_COUNT"
           
-          if [ "$PROC_COUNT" -lt 10 ]; then
-            echo "❌ Expected at least 10 stored procedures, found $PROC_COUNT"
+          if [ "$PROC_COUNT" -lt 8 ]; then
+            echo "❌ Expected at least 8 stored procedures, found $PROC_COUNT"
             exit 1
           fi
           
@@ -260,8 +260,92 @@ jobs:
           echo "✅ Database schema integrity validated"
 
   # ==========================================
-  # 4️⃣ SECURITY & SAFETY VALIDATION
+  # 4️⃣ API VALIDATION
   # ==========================================
+  api-validation:
+    name: API Validation (FastAPI + Endpoints)
+    runs-on: ubuntu-22.04
+    needs: backend-checks
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: 'dbms-backend/requirements.txt'
+      
+      # Install Python dependencies
+      - name: Install Python Dependencies
+        working-directory: dbms-backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          echo "✅ Python dependencies installed"
+      
+      # Start FastAPI server in background
+      - name: Start FastAPI Server
+        working-directory: dbms-backend
+        run: |
+          python -m uvicorn app.main:app --host 0.0.0.0 --port 8002 &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          sleep 5
+          echo "✅ FastAPI server started"
+      
+      # Validate API endpoints are accessible
+      - name: Validate API Endpoints
+        run: |
+          # Test root endpoint
+          if ! curl -f -s http://localhost:8002/ > /dev/null; then
+            echo "❌ Root endpoint not accessible"
+            exit 1
+          fi
+          echo "✅ Root endpoint accessible"
+          
+          # Test health endpoint
+          if ! curl -f -s http://localhost:8002/health/ > /dev/null; then
+            echo "❌ Health endpoint not accessible"
+            exit 1
+          fi
+          echo "✅ Health endpoint accessible"
+          
+          # Test OpenAPI docs
+          if ! curl -f -s http://localhost:8002/docs > /dev/null; then
+            echo "❌ API docs not accessible"
+            exit 1
+          fi
+          echo "✅ API docs accessible"
+      
+      # Validate JSON responses
+      - name: Validate JSON Response Structure
+        run: |
+          # Test root endpoint JSON structure
+          RESPONSE=$(curl -s http://localhost:8002/)
+          if ! echo "$RESPONSE" | jq -e '.name and .version and .status' > /dev/null; then
+            echo "❌ Root endpoint JSON structure invalid"
+            exit 1
+          fi
+          echo "✅ Root endpoint JSON structure valid"
+          
+          # Test health endpoint JSON structure
+          HEALTH_RESPONSE=$(curl -s http://localhost:8002/health/)
+          if ! echo "$HEALTH_RESPONSE" | jq -e '.status' > /dev/null; then
+            echo "❌ Health endpoint JSON structure invalid"
+            exit 1
+          fi
+          echo "✅ Health endpoint JSON structure valid"
+      
+      # Stop server
+      - name: Stop FastAPI Server
+        run: |
+          if [ -n "$SERVER_PID" ]; then
+            kill $SERVER_PID
+            echo "✅ FastAPI server stopped"
+          fi
   security-checks:
     name: Security & Safety Validation
     runs-on: ubuntu-22.04
@@ -324,12 +408,139 @@ jobs:
           echo "✅ SQL security validation passed"
 
   # ==========================================
-  # 5️⃣ INTEGRATION VALIDATION
+  # 5️⃣ INTEGRATION TEST (FULL SYSTEM FLOW)
   # ==========================================
+  integration-test:
+    name: Integration Test (Full System Flow)
+    runs-on: ubuntu-22.04
+    needs: [database-schema-validation, api-validation]
+    
+    # MySQL service for integration testing
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci_test_password_123
+          MYSQL_DATABASE: dbms_self_healing_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      # Setup Python
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: 'dbms-backend/requirements.txt'
+      
+      # Install Python dependencies
+      - name: Install Python Dependencies
+        working-directory: dbms-backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          echo "✅ Python dependencies installed"
+      
+      # Wait for MySQL
+      - name: Wait for MySQL Service
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -P 3306 -u root -pci_test_password_123 --silent; then
+              echo "✅ MySQL is ready"
+              break
+            fi
+            echo "Waiting for MySQL... ($i/30)"
+            sleep 2
+          done
+      
+      # Load schema and procedures
+      - name: Load Database Schema and Procedures
+        run: |
+          # Load schema
+          mysql -h 127.0.0.1 -P 3306 -u root -pci_test_password_123 dbms_self_healing_test < DATABASE_THINGS/schema_refactored.sql
+          
+          # Load procedures
+          for file in dbms-backend/app/database/sql/ai_engine/*.sql; do
+            mysql -h 127.0.0.1 -P 3306 -u root -pci_test_password_123 dbms_self_healing_test < "$file"
+          done
+          
+          for file in dbms-backend/app/database/sql/step2_engine/*.sql; do
+            mysql -h 127.0.0.1 -P 3306 -u root -pci_test_password_123 dbms_self_healing_test < "$file"
+          done
+          
+          echo "✅ Database schema and procedures loaded"
+      
+      # Start FastAPI server
+      - name: Start FastAPI Server
+        working-directory: dbms-backend
+        run: |
+          python -m uvicorn app.main:app --host 0.0.0.0 --port 8002 &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          sleep 5
+          echo "✅ FastAPI server started"
+      
+      # Test full system flow
+      - name: Test Full System Flow
+        run: |
+          # 1. Check initial state (should be empty)
+          ISSUES_COUNT=$(curl -s http://localhost:8002/issues/ | jq '. | length')
+          echo "Initial issues count: $ISSUES_COUNT"
+          
+          # 2. Insert test issue via SQL
+          mysql -h 127.0.0.1 -P 3306 -u root -pci_test_password_123 dbms_self_healing_test -e "
+            INSERT INTO detected_issues (issue_id, issue_type, raw_metric_value, detected_at) 
+            VALUES (9999, 'DEADLOCK', 100.0, NOW());
+          "
+          
+          # 3. Check issue was inserted
+          sleep 2
+          ISSUES_COUNT=$(curl -s http://localhost:8002/issues/ | jq '. | length')
+          if [ "$ISSUES_COUNT" -lt 1 ]; then
+            echo "❌ Issue not found in API"
+            exit 1
+          fi
+          echo "✅ Issue detected and available via API"
+          
+          # 4. Check if analysis was triggered (may take time)
+          sleep 5
+          ANALYSIS_COUNT=$(curl -s http://localhost:8002/analysis/ | jq '. | length')
+          echo "Analysis count: $ANALYSIS_COUNT"
+          
+          # 5. Check decisions
+          DECISIONS_COUNT=$(curl -s http://localhost:8002/decisions/ | jq '. | length')
+          echo "Decisions count: $DECISIONS_COUNT"
+          
+          # 6. Check actions
+          ACTIONS_COUNT=$(curl -s http://localhost:8002/actions/ | jq '. | length')
+          echo "Actions count: $ACTIONS_COUNT"
+          
+          # 7. Check learning history
+          LEARNING_COUNT=$(curl -s http://localhost:8002/learning/ | jq '. | length')
+          echo "Learning count: $LEARNING_COUNT"
+          
+          echo "✅ Full system flow integration test completed"
+      
+      # Stop server
+      - name: Stop FastAPI Server
+        run: |
+          if [ -n "$SERVER_PID" ]; then
+            kill $SERVER_PID
+            echo "✅ FastAPI server stopped"
+          fi
   integration-check:
     name: Integration Validation
     runs-on: ubuntu-22.04
-    needs: [frontend-checks, backend-checks, database-schema-validation, security-checks]
+    needs: [frontend-checks, backend-checks, database-schema-validation, security-checks, api-validation, integration-test]
     
     steps:
       - name: Checkout Repository

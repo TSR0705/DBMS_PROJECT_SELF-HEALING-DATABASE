@@ -45,6 +45,7 @@ interface APIDecisionResponse {
 
 interface APILearningResponse {
   learning_id: string;
+  decision_id: string;
   issue_type: string;
   action_type: string;
   outcome: string;
@@ -189,7 +190,11 @@ class ApiClient {
 
   private processLearningData(data: APILearningResponse[]): LearningHistory[] {
     return data.map(item => ({
-      ...item,
+      learning_id: item.learning_id,
+      decision_id: item.decision_id,
+      issue_type: item.issue_type,
+      action_type: item.action_type,
+      outcome: item.outcome,
       confidence_before:
         typeof item.confidence_before === 'string'
           ? parseFloat(item.confidence_before)
@@ -198,6 +203,7 @@ class ApiClient {
         typeof item.confidence_after === 'string'
           ? parseFloat(item.confidence_after)
           : item.confidence_after,
+      recorded_at: item.recorded_at,
     }));
   }
 

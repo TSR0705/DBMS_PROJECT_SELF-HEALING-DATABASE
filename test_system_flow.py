@@ -58,10 +58,10 @@ try:
     if decision: print(f'Decision: {decision}')
     if action: print(f'Action: {action}')
     
-    cursor.execute('SELECT * FROM debug_log WHERE related_issue_id = %s ORDER BY started_at ASC', (issue_id,))
+    cursor.execute('SELECT * FROM debug_log ORDER BY created_at DESC LIMIT 10')
     debug_logs = cursor.fetchall()
     print(f'\n--- DEBUG LOGS ({len(debug_logs)}) ---')
-    for log in debug_logs: print(f'{log["process_name"]} -> {log["status"]}: {log["message"]}')
+    for log in debug_logs: print(f'{log["step"]} -> {log["message"]}')
     
 except Exception as e:
     print(f'Error: {e}')
