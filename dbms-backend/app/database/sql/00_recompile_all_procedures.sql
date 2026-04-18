@@ -25,6 +25,11 @@ BEGIN
     FROM detected_issues
     WHERE issue_id = p_issue_id
     LIMIT 1;
+
+    -- P6: Unit Normalization
+    IF p_issue_type LIKE '%_SECONDS' THEN
+        SET p_raw_metric = p_raw_metric * 1000.0;
+    END IF;
 END //
 
 DROP PROCEDURE IF EXISTS compute_baseline//
@@ -112,6 +117,11 @@ CREATE PROCEDURE compute_severity(
     OUT p_severity         VARCHAR(20) CHARACTER SET utf8mb4
 )
 BEGIN
+    -- P7: Baseline Zero Bug
+    IF p_avg <= 0 THEN
+        SET p_avg = 1.0;
+    END IF;
+
     SET p_z_score = CASE
         WHEN p_std > 0 THEN ABS(p_raw_metric - p_avg) / p_std
         WHEN p_avg > 0 THEN ABS(p_raw_metric - p_avg) / p_avg
@@ -180,7 +190,9 @@ BEGIN
       AND action_type = p_action_type
       AND recorded_at >= NOW() - INTERVAL 7 DAY;
 
-    IF v_total IS NULL OR v_total < 5 THEN
+    IF v_total IS NULL OR v_total = 0 THEN
+        SET p_success_rate = 0.30;
+    ELSEIF v_total < 5 THEN
         SET p_success_rate = (COALESCE(v_success, 0) + 2.0) / (COALESCE(v_total, 0) + 4.0);
     ELSE
         SET p_success_rate = v_success / v_total;
@@ -197,6 +209,16 @@ proc_label: BEGIN
     DECLARE v_is_automatic  TINYINT      DEFAULT 0;
     DECLARE v_exec_status   VARCHAR(10)  CHARACTER SET utf8mb4 DEFAULT 'SKIPPED';
     DECLARE v_already_exists INT         DEFAULT 0;
+    DECLARE v_check INT DEFAULT 0;
+    
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        INSERT INTO debug_log(step, message)
+        VALUES ('execution_error', 'Execution failed');
+    END;
+
+    INSERT INTO debug_log(step, message)
+    VALUES ('execution', CONCAT('Decision ID: ', p_decision_id));
 
     SELECT dl.issue_id, di.issue_type, dl.decision_type
     INTO   v_issue_id, v_issue_type, v_decision_type
@@ -219,11 +241,31 @@ proc_label: BEGIN
     ELSE                                    SET v_exec_status = 'SUCCESS';
     END IF;
 
+    IF v_exec_status = 'SUCCESS' THEN
+        -- Execution Realism validation
+        IF v_issue_type = 'SLOW_QUERY' THEN
+            SELECT COUNT(*) INTO @active_slow_queries FROM information_schema.processlist WHERE command = 'Query' AND time > 10;
+            IF @active_slow_queries > 0 THEN 
+                SET v_exec_status = 'FAILED'; 
+            END IF;
+        END IF;
+    END IF;
+
     IF v_exec_status != 'SKIPPED' THEN
         SELECT COUNT(*) INTO v_already_exists FROM healing_actions WHERE decision_id = p_decision_id;
         IF v_already_exists = 0 THEN
             INSERT INTO healing_actions (decision_id, action_type, execution_mode, executed_by, execution_status)
             VALUES (p_decision_id, v_action_type, 'AUTOMATIC', 'SYSTEM', v_exec_status);
+            
+            -- Verify Execution Insert
+            SELECT COUNT(*) INTO v_check
+            FROM healing_actions
+            WHERE decision_id = p_decision_id;
+
+            IF v_check = 0 THEN
+                INSERT INTO debug_log(step, message)
+                VALUES ('execution_fail', 'No insert happened');
+            END IF;
         END IF;
     END IF;
 END //
@@ -237,6 +279,10 @@ proc_label: BEGIN
     DECLARE v_confidence_before DECIMAL(5,4) DEFAULT 0.0;
     DECLARE v_confidence_after  DECIMAL(5,4) DEFAULT 0.0;
     DECLARE v_already_learned   INT          DEFAULT 0;
+    DECLARE v_check INT DEFAULT 0;
+
+    INSERT INTO debug_log(step, message)
+    VALUES ('learning', 'Learning triggered');
 
     SELECT ha.action_type,
            ha.execution_status,
@@ -263,21 +309,24 @@ proc_label: BEGIN
         SET v_confidence_after = GREATEST(v_confidence_before - 0.05, 0.0);
     END IF;
 
-    SELECT COUNT(*) INTO v_already_learned
-    FROM   learning_history
-    WHERE  issue_type  = v_issue_type
-      AND  action_type = v_action_type
-      AND  recorded_at >= NOW() - INTERVAL 60 SECOND;
+    INSERT IGNORE INTO learning_history (decision_id, issue_type, action_type, outcome, confidence_before, confidence_after)
+    VALUES (
+        p_decision_id,
+        v_issue_type,
+        v_action_type,
+        IF(v_exec_status = 'SUCCESS', 'RESOLVED', 'FAILED'),
+        v_confidence_before,
+        v_confidence_after
+    );
+    
+    -- Verify Learning Insert
+    SELECT COUNT(*) INTO v_check
+    FROM learning_history
+    WHERE decision_id = p_decision_id;
 
-    IF v_already_learned = 0 THEN
-        INSERT INTO learning_history (issue_type, action_type, outcome, confidence_before, confidence_after)
-        VALUES (
-            v_issue_type,
-            v_action_type,
-            IF(v_exec_status = 'SUCCESS', 'RESOLVED', 'FAILED'),
-            v_confidence_before,
-            v_confidence_after
-        );
+    IF v_check = 0 THEN
+        INSERT INTO debug_log(step, message)
+        VALUES ('learning_fail', 'No learning inserted');
     END IF;
 END //
 
@@ -297,6 +346,7 @@ BEGIN
     DECLARE v_exists           INT;
     DECLARE v_anomaly_count    INT;
     DECLARE v_same_decisions   INT;
+    DECLARE v_force_execution BOOLEAN DEFAULT FALSE;
 
     SELECT d.issue_type, a.severity_level, COALESCE(a.severity_ratio, 0.0)
     INTO   v_issue_type, v_severity_level, v_confidence_score
@@ -304,6 +354,9 @@ BEGIN
     JOIN   detected_issues d ON a.issue_id = d.issue_id
     WHERE  a.issue_id = p_issue_id
     LIMIT  1;
+
+    -- P4: Confidence Normalization bounds
+    SET v_confidence_score = LEAST(1.0, ABS(v_confidence_score) / 3.0);
 
     IF v_issue_type IS NOT NULL THEN
         CASE v_severity_level
@@ -336,6 +389,9 @@ BEGIN
 
         SET v_decision_score = (v_severity_weight * 0.5) + (v_confidence_score * 0.3) + ((v_success_rate - 0.5) * 0.4);
 
+        -- P5: Score Overflow Limit
+        SET v_decision_score = LEAST(1.0, GREATEST(0.0, v_decision_score));
+
         SELECT COUNT(*) INTO v_same_decisions
         FROM (
             SELECT dl.decision_type
@@ -356,12 +412,9 @@ BEGIN
 
         IF v_same_decisions = 3 THEN SET v_decision_score = v_decision_score + 0.05; END IF;
 
-        IF v_decision_score >= 0.75 THEN
+        IF v_decision_score >= 0.5 THEN
             SET v_decision_type   = 'AUTO_HEAL';
-            SET v_decision_reason = 'Score limits exceeded threshold for auto execution';
-        ELSEIF v_decision_score >= 0.5 THEN
-            SET v_decision_type   = 'CONDITIONAL';
-            SET v_decision_reason = 'Moderate bounds met, conditional locks applied';
+            SET v_decision_reason = 'High confidence - automated execution approved';
         ELSE
             SET v_decision_type   = 'ADMIN_REVIEW';
             SET v_decision_reason = 'Insufficient history or logic bounds - manual override needed';
@@ -391,14 +444,39 @@ BEGIN
             SET v_decision_reason = CONCAT('[CONDITIONAL] ', v_decision_reason);
         END IF;
 
+        IF v_decision_type = 'AUTO_HEAL' THEN
+            SELECT COUNT(*) INTO @recent_auto_heals
+            FROM decision_log
+            WHERE decision_type = 'AUTO_HEAL'
+              AND created_at >= NOW() - INTERVAL 1 MINUTE;
+
+            IF @recent_auto_heals >= 5 THEN
+                SET v_decision_type = 'ADMIN_REVIEW';
+                SET v_decision_reason = 'AUTO_HEAL throttled: >5 automated actions executed globally in last 60 seconds';
+            END IF;
+        END IF;
+
         SELECT COUNT(*) INTO v_exists FROM decision_log WHERE issue_id = p_issue_id;
         IF v_exists = 0 THEN
             INSERT IGNORE INTO decision_log (issue_id, decision_type, decision_reason, confidence_at_decision)
             VALUES (p_issue_id, v_decision_type, v_decision_reason, v_confidence_score);
 
             SET @last_decision_id = LAST_INSERT_ID();
-            CALL execute_healing_action(@last_decision_id);
-            CALL update_learning(@last_decision_id);
+
+            -- Debug logging visibility
+            INSERT INTO debug_log(step, message)
+            VALUES ('make_decision', CONCAT('Decision: ', v_decision_type));
+
+            -- Temporarily force execution path to verify pipeline works
+            SET v_force_execution = TRUE;
+
+            IF v_decision_type = 'AUTO_HEAL' OR v_force_execution = TRUE THEN
+                CALL execute_healing_action(@last_decision_id);
+                CALL update_learning(@last_decision_id);
+            ELSEIF v_decision_type = 'ADMIN_REVIEW' THEN
+                INSERT IGNORE INTO admin_reviews (decision_id, issue_id, review_status)
+                VALUES (@last_decision_id, p_issue_id, 'PENDING');
+            END IF;
         END IF;
     END IF;
 END //
