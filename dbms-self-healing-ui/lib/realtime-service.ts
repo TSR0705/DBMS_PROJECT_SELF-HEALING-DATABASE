@@ -2,7 +2,8 @@
 // Ensures all components receive live data from the backend
 
 import { apiClient } from './api';
-import type { RealtimeData } from '../types/dashboard';
+import type { RealtimeData, PipelineEvent } from '../types/dashboard';
+import { DASHBOARD_CONFIG } from './config';
 
 class RealtimeService {
   private data: RealtimeData | null = null;
@@ -150,35 +151,123 @@ class RealtimeService {
       const autoHealSuccessRate =
         totalActions > 0 ? (successfulActions / totalActions) * 100 : 0;
 
+      const autoHealedCount = actionsResult.filter(
+        a => a.execution_mode === 'AUTOMATIC' && a.execution_status === 'SUCCESS'
+      ).length;
+
+      const pendingReviews = reviewsResult.filter(
+        r => r.review_status === 'PENDING'
+      ).length;
+
+      const criticalIssues = analysisResult.filter(
+        a => a.severity_level === 'CRITICAL'
+      ).length;
+
       const resolvedLearning = learningResult.filter(
         l => l.outcome === 'RESOLVED'
       ).length;
       const issuesResolved = resolvedLearning + successfulActions;
 
+      // Pipeline Event Generation (Frontend Merge)
+      const pipelineEvents: PipelineEvent[] = issuesResult.map(issue => {
+        const analysis = analysisResult.find(a => a.issue_id === issue.issue_id);
+        const decision = decisionsResult.find(d => d.issue_id === issue.issue_id);
+        const action = decision
+          ? actionsResult.find(a => a.decision_id === decision.decision_id)
+          : undefined;
+        const learning = decision
+          ? learningResult.find(l => l.decision_id === decision.decision_id)
+          : undefined;
+        const review = reviewsResult.find(r => r.issue_id === issue.issue_id);
+
+        let process_state: PipelineEvent['process_state'] = 'ANALYZED';
+        let outcome: PipelineEvent['outcome'] = 'PENDING';
+
+        // NEW STATUS ENGINE LOGIC
+        if (review?.review_status === 'REJECTED') {
+          process_state = 'FINISHED';
+          outcome = 'REJECTED';
+        } else if (learning) {
+          process_state = 'FINISHED';
+          outcome = (learning.outcome as PipelineEvent['outcome']) || 'SUCCESS';
+        } else if (action) {
+          process_state = 'EXECUTING';
+          outcome = (action.execution_status as PipelineEvent['outcome']) || 'PENDING';
+        } else if (decision?.decision_type === 'ADMIN_REVIEW') {
+          process_state = 'WAITING_REVIEW';
+          outcome = 'PENDING';
+        } else if (decision) {
+          process_state = 'DECIDED';
+          outcome = 'PENDING';
+        }
+
+        return {
+          issue_id: issue.issue_id,
+          issue_type: issue.issue_type,
+          detected_at: issue.detected_at,
+          severity: analysis?.severity_level || 'UNKNOWN',
+          confidence: analysis?.confidence_score || 0,
+          decision_type: decision?.decision_type || 'PENDING',
+          decision_reason: decision?.decision_reason,
+          action_type: action?.action_type,
+          execution_status: action?.execution_status,
+          execution_mode: action?.execution_mode,
+          learning_outcome: learning?.outcome,
+          review_status: review?.review_status,
+          process_state,
+          outcome,
+        };
+      });
+
+      // Sort by Severity (CRITICAL -> HIGH -> MEDIUM -> LOW)
+      const severityOrder: Record<string, number> = {
+        CRITICAL: 4,
+        HIGH: 3,
+        MEDIUM: 2,
+        LOW: 1,
+        UNKNOWN: 0,
+      };
+
+      const sortedEvents = [...pipelineEvents].sort((a, b) => {
+        const scoreA = severityOrder[a.severity] || 0;
+        const scoreB = severityOrder[b.severity] || 0;
+        if (scoreA !== scoreB) return scoreB - scoreA;
+        return (
+          new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime()
+        );
+      });
+
       // Build comprehensive data object
       this.data = {
         systemMetrics: {
           totalIssues: dbStats.total_issues || issuesResult.length,
+          criticalIssues,
           totalAnalysis: dbStats.total_analysis || analysisResult.length,
           totalDecisions: dbStats.total_decisions || decisionsResult.length,
           totalActions: dbStats.total_actions || actionsResult.length,
+          autoHealedCount,
           totalReviews: dbStats.total_reviews || reviewsResult.length,
+          pendingReviews,
           totalLearning: dbStats.total_learning || learningResult.length,
           isConnected,
           lastUpdate: new Date(),
           uptime: isConnected ? '99.97%' : '0%',
           autoHealSuccessRate: Math.round(autoHealSuccessRate),
           issuesResolved,
-          detectionTime: '<150ms', // This would come from performance metrics in real system
+          detectionTime: '<150ms',
           connectionStatus,
           lastError,
         },
-        recentIssues: issuesResult.slice(0, 10),
-        recentActions: actionsResult.slice(0, 10),
-        recentAnalysis: analysisResult.slice(0, 10),
-        recentDecisions: decisionsResult.slice(0, 10),
-        recentLearning: learningResult.slice(0, 10),
-        recentReviews: reviewsResult.slice(0, 10),
+        recentIssues: issuesResult.slice(0, DASHBOARD_CONFIG.LIMITS.RECENT_ISSUES),
+        recentActions: actionsResult.slice(0, DASHBOARD_CONFIG.LIMITS.RECENT_ISSUES),
+        recentAnalysis: analysisResult.slice(0, DASHBOARD_CONFIG.LIMITS.RECENT_ANALYSIS),
+        recentDecisions: decisionsResult.slice(0, DASHBOARD_CONFIG.LIMITS.RECENT_DECISIONS),
+        recentLearning: learningResult.slice(0, DASHBOARD_CONFIG.LIMITS.RECENT_LEARNING),
+        recentReviews: [
+          ...reviewsResult.filter(r => r.review_status === 'PENDING'),
+          ...reviewsResult.filter(r => r.review_status !== 'PENDING'),
+        ].slice(0, DASHBOARD_CONFIG.LIMITS.RECENT_REVIEWS),
+        recentEvents: sortedEvents.slice(0, DASHBOARD_CONFIG.LIMITS.RECENT_EVENTS),
       };
 
       // Notify all listeners
@@ -240,10 +329,10 @@ class RealtimeService {
     // Initial fetch
     this.fetchAllData();
 
-    // Set up periodic updates every 30 seconds
+    // Set up periodic updates every 10 seconds (requested)
     this.updateInterval = setInterval(() => {
       this.fetchAllData();
-    }, 30000);
+    }, DASHBOARD_CONFIG.REFRESH_INTERVAL_MS);
   }
 
   // Clean up resources
