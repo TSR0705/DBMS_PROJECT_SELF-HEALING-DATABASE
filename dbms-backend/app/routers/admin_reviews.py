@@ -26,12 +26,16 @@ async def get_all_admin_reviews(
     SELECT 
         review_id,
         decision_id,
+        issue_id,
+        review_status,
+        issue_type,
+        action_type,
         admin_action,
         admin_comment,
         override_flag,
         reviewed_at
     FROM admin_reviews 
-    ORDER BY reviewed_at DESC
+    ORDER BY review_id DESC
     LIMIT %s
     """
     
@@ -45,6 +49,10 @@ async def get_all_admin_reviews(
             review = AdminReview(
                 review_id=str(row['review_id']),
                 decision_id=str(row['decision_id']),
+                issue_id=str(row['issue_id']),
+                review_status=row['review_status'],
+                issue_type=row['issue_type'],
+                action_type=row['action_type'],
                 admin_action=row['admin_action'],
                 admin_comment=row['admin_comment'],
                 override_flag=bool(row['override_flag']),
@@ -72,6 +80,10 @@ async def get_admin_review_by_id(
     SELECT 
         review_id,
         decision_id,
+        issue_id,
+        review_status,
+        issue_type,
+        action_type,
         admin_action,
         admin_comment,
         override_flag,
@@ -90,7 +102,18 @@ async def get_admin_review_by_id(
             )
         
         logger.info(f"Retrieved admin review {review_id}")
-        return AdminReview(**results[0])
+        return AdminReview(
+            review_id=str(results[0]['review_id']),
+            decision_id=str(results[0]['decision_id']),
+            issue_id=str(results[0]['issue_id']),
+            review_status=results[0]['review_status'],
+            issue_type=results[0]['issue_type'],
+            action_type=results[0]['action_type'],
+            admin_action=results[0]['admin_action'],
+            admin_comment=results[0]['admin_comment'],
+            override_flag=bool(results[0]['override_flag']),
+            reviewed_at=results[0]['reviewed_at']
+        )
         
     except HTTPException:
         raise
@@ -112,13 +135,17 @@ async def get_reviews_by_decision(
     SELECT 
         review_id,
         decision_id,
+        issue_id,
+        review_status,
+        issue_type,
+        action_type,
         admin_action,
         admin_comment,
         override_flag,
         reviewed_at
     FROM admin_reviews 
     WHERE decision_id = %s
-    ORDER BY reviewed_at DESC
+    ORDER BY review_id DESC
     """
     
     try:
@@ -130,6 +157,10 @@ async def get_reviews_by_decision(
             review = AdminReview(
                 review_id=str(row['review_id']),
                 decision_id=str(row['decision_id']),
+                issue_id=str(row['issue_id']),
+                review_status=row['review_status'],
+                issue_type=row['issue_type'],
+                action_type=row['action_type'],
                 admin_action=row['admin_action'],
                 admin_comment=row['admin_comment'],
                 override_flag=bool(row['override_flag']),
