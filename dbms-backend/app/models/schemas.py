@@ -89,9 +89,13 @@ class AdminReview(BaseModel):
     """
     review_id: str = Field(..., description="Unique identifier for the review")
     decision_id: str = Field(..., description="Reference to the reviewed decision")
-    admin_action: str = Field(..., description="Action taken by admin")
+    issue_id: str = Field(..., description="Reference to the related issue")
+    review_status: str = Field(..., description="Current status of the review (PENDING, APPROVED, REJECTED)")
+    issue_type: Optional[str] = Field(None, description="Type of issue being reviewed")
+    action_type: Optional[str] = Field(None, description="Type of action proposed")
+    admin_action: Optional[str] = Field(None, description="Action taken by admin")
     admin_comment: Optional[str] = Field(None, description="Admin comments")
-    override_flag: bool = Field(..., description="Whether admin overrode the decision")
+    override_flag: bool = Field(False, description="Whether admin overrode the decision")
     reviewed_at: datetime = Field(..., description="Timestamp of review")
     
     class Config:
