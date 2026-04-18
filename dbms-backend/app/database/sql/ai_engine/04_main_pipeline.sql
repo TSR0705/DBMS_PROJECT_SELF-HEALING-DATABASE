@@ -1,11 +1,12 @@
+/*!40101 SET NAMES utf8mb4 */;
 DELIMITER //
 
 DROP PROCEDURE IF EXISTS run_ai_analysis//
 CREATE PROCEDURE run_ai_analysis(IN p_issue_id BIGINT)
 BEGIN
-    DECLARE v_issue_type VARCHAR(255);
+    DECLARE v_issue_type VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
     DECLARE v_raw_metric DECIMAL(15, 6);
-    DECLARE v_metric_group VARCHAR(20);
+    DECLARE v_metric_group VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
     
     DECLARE v_avg DECIMAL(15, 6);
     DECLARE v_std DECIMAL(15, 6);
@@ -53,14 +54,12 @@ BEGIN
                 issue_id,
                 severity_level,
                 baseline_metric,
-                severity_ratio,
-                created_at
+                severity_ratio
             ) VALUES (
                 p_issue_id,
                 v_severity,
                 v_avg,
-                v_z_score,
-                NOW()
+                v_z_score
             );
         END IF;
     END IF;
