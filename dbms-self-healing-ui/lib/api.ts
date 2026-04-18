@@ -8,6 +8,7 @@ import type {
   LearningHistory,
   HealthCheck,
 } from '../types/dashboard';
+import { DASHBOARD_CONFIG } from './config';
 
 const ALLOWED_API_URLS = ['http://localhost:8002', 'https://localhost:8002'];
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002';
@@ -29,6 +30,8 @@ interface APIAnalysisResponse {
   severity_level: string;
   risk_type: string;
   model_version: string;
+  baseline_metric: number | string;
+  severity_ratio: number | string;
 }
 
 interface APIDecisionResponse {
@@ -95,7 +98,11 @@ class ExponentialBackoff {
   private readonly baseDelay: number;
   private readonly maxDelay: number;
 
-  constructor(maxAttempts = 3, baseDelay = 1000, maxDelay = 10000) {
+  constructor(
+    maxAttempts = DASHBOARD_CONFIG.API.MAX_RETRIES,
+    baseDelay = DASHBOARD_CONFIG.API.BASE_DELAY_MS,
+    maxDelay = DASHBOARD_CONFIG.API.MAX_DELAY_MS
+  ) {
     this.maxAttempts = maxAttempts;
     this.baseDelay = baseDelay;
     this.maxDelay = maxDelay;
@@ -147,15 +154,27 @@ class ExponentialBackoff {
 class ApiClient {
   private backoff = new ExponentialBackoff();
 
+  // Safe number parsing following strict protocol
+  private safeNumber(v: any): number {
+    if (v === null || v === undefined) return 0;
+    const num = Number(v);
+    return Number.isNaN(num) ? 0 : num;
+  }
+
   // Data processing helpers with proper types
-  private processAnalysisData(data: APIAnalysisResponse[]): AIAnalysis[] {
-    return data.map(item => ({
+  private processAnalysisData(data: any): AIAnalysis[] {
+    console.log("Processing API Data:", data);
+    
+    // Ensure data is an array before processing
+    const results = Array.isArray(data) ? data : [];
+    
+    return results.map(item => ({
       ...item,
-      confidence_score:
-        typeof item.confidence_score === 'string'
-          ? parseFloat(item.confidence_score)
-          : item.confidence_score,
-    }));
+      // Use exact table schema names and safe parsing
+      severity_ratio: this.safeNumber(item.severity_ratio),
+      baseline_metric: this.safeNumber(item.baseline_metric),
+      confidence_score: this.safeNumber(item.confidence_score)
+    })) as AIAnalysis[];
   }
 
   private processDecisionData(data: APIDecisionResponse[]): DecisionLog[] {
@@ -182,16 +201,21 @@ class ApiClient {
     }));
   }
 
-  private async request<T>(endpoint: string): Promise<T> {
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     return this.backoff.execute(async () => {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        // Use 60s for writes (stored procedures), 30s for reads
+        const timeoutMs = options.method && options.method !== 'GET' ? 60000 : 30000;
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+          method: options.method || 'GET',
           headers: {
             'Content-Type': 'application/json',
+            ...(options.headers || {}),
           },
+          body: options.body,
           signal: controller.signal,
           mode: 'cors',
         });
@@ -332,6 +356,20 @@ class ApiClient {
     return this.request<AdminReview[]>(
       `/admin-reviews/decision/${sanitizedId}`
     );
+  }
+
+  async approveReview(reviewId: string): Promise<any> {
+    const sanitizedId = reviewId.replace(/[^a-zA-Z0-9-_]/g, '');
+    return this.request<any>(`/admin-reviews/${sanitizedId}/approve`, {
+      method: 'POST',
+    });
+  }
+
+  async rejectReview(reviewId: string): Promise<any> {
+    const sanitizedId = reviewId.replace(/[^a-zA-Z0-9-_]/g, '');
+    return this.request<any>(`/admin-reviews/${sanitizedId}/reject`, {
+      method: 'POST',
+    });
   }
 
   // Learning History API
