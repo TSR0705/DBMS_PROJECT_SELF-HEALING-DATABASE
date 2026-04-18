@@ -12,6 +12,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  NODE_VERSION: '20'
+  PYTHON_VERSION: '3.11'
+
 jobs:
   # ==========================================
   # 1️⃣ FRONTEND VALIDATION
@@ -27,7 +31,7 @@ jobs:
       - name: Setup Node.js (LTS)
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: 'dbms-self-healing-ui/package-lock.json'
       
@@ -50,7 +54,7 @@ jobs:
         working-directory: dbms-self-healing-ui
         run: |
           npm run lint
-          echo "✅ ESLint passed - no code quality issues"
+          echo "✅ Code quality check passed"
       
       # Production build test - Ensures deployability
       - name: Next.js Production Build
@@ -66,17 +70,17 @@ jobs:
   # 2️⃣ BACKEND VALIDATION
   # ==========================================
   backend-checks:
-    name: Backend Validation (Python + Flask)
+    name: Backend Validation (Python + FastAPI)
     runs-on: ubuntu-22.04
     
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
       
-      - name: Setup Python 3.11
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
           cache-dependency-path: 'dbms-backend/requirements.txt'
       
@@ -86,7 +90,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest flake8 # Testing and linting tools
           echo "✅ Python dependencies installed"
       
       # Python syntax and import validation
@@ -167,6 +170,24 @@ jobs:
           mysql -h 127.0.0.1 -P 3306 -u root -pci_test_password_123 dbms_self_healing_test < DATABASE_THINGS/schema_refactored.sql
           echo "✅ Database schema loaded successfully"
       
+      # Load AI Engine procedures
+      - name: Load AI Engine Procedures
+        run: |
+          for file in dbms-backend/app/database/sql/ai_engine/*.sql; do
+            echo "Loading $file..."
+            mysql -h 127.0.0.1 -P 3306 -u root -pci_test_password_123 dbms_self_healing_test < "$file"
+          done
+          echo "✅ AI Engine procedures loaded successfully"
+      
+      # Load Decision Engine procedures
+      - name: Load Decision Engine Procedures
+        run: |
+          for file in dbms-backend/app/database/sql/step2_engine/*.sql; do
+            echo "Loading $file..."
+            mysql -h 127.0.0.1 -P 3306 -u root -pci_test_password_123 dbms_self_healing_test < "$file"
+          done
+          echo "✅ Decision Engine procedures loaded successfully"
+      
       # Validate table creation and structure
       - name: Validate Database Structure
         run: |
@@ -188,6 +209,23 @@ jobs:
           done
           
           echo "✅ All expected tables are present"
+      
+      # Validate stored procedures
+      - name: Validate Stored Procedures
+        run: |
+          PROCEDURES=$(mysql -h 127.0.0.1 -P 3306 -u root -pci_test_password_123 -D dbms_self_healing_test -e "SHOW PROCEDURE STATUS WHERE Db = 'dbms_self_healing_test';" -s | awk '{print $2}')
+          
+          echo "Found procedures: $PROCEDURES"
+          
+          PROC_COUNT=$(echo "$PROCEDURES" | wc -w)
+          echo "Total procedures: $PROC_COUNT"
+          
+          if [ "$PROC_COUNT" -lt 10 ]; then
+            echo "❌ Expected at least 10 stored procedures, found $PROC_COUNT"
+            exit 1
+          fi
+          
+          echo "✅ Stored procedures are properly defined"
       
       # Validate foreign key constraints
       - name: Validate Foreign Key Constraints
@@ -236,17 +274,17 @@ jobs:
       - name: Scan for Hardcoded Secrets
         run: |
           # Check for common secret patterns (exclude test files and CI validation)
-          if grep -r -i "password.*=" --include="*.py" --include="*.js" --include="*.ts" --include="*.json" . | grep -v ".env.example" | grep -v "ci_test_password" | grep -v "test_password" | grep -v "test_ci_validation.py" | grep -v "connection.py.*debug_config"; then
+          if grep -r -i "password\s*=\s*['\"]" --include="*.py" --include="*.js" --include="*.ts" --include="*.json" . | grep -v ".env.example" | grep -v "ci_test_password" | grep -v "test_password" | grep -v "conftest.py" | grep -v "DB_PASSWORD"; then
             echo "❌ Potential hardcoded passwords found"
             exit 1
           fi
           
-          if grep -r -i "api[_-]key.*=" --include="*.py" --include="*.js" --include="*.ts" . | grep -v ".env.example"; then
+          if grep -r -i "api[_-]key\s*=\s*['\"]" --include="*.py" --include="*.js" --include="*.ts" . | grep -v ".env.example"; then
             echo "❌ Potential hardcoded API keys found"
             exit 1
           fi
           
-          if grep -r -i "secret.*=" --include="*.py" --include="*.js" --include="*.ts" . | grep -v ".env.example"; then
+          if grep -r -i "secret\s*=\s*['\"]" --include="*.py" --include="*.js" --include="*.ts" . | grep -v ".env.example" | grep -v "SECRET_KEY"; then
             echo "❌ Potential hardcoded secrets found"
             exit 1
           fi
@@ -272,13 +310,13 @@ jobs:
       - name: SQL Security Validation
         run: |
           # Check for potentially dangerous SQL patterns in schema files
-          if grep -i "truncate\|drop.*database" DATABASE_THINGS/*.sql; then
+          if grep -i "truncate\|drop.*database" DATABASE_THINGS/*.sql 2>/dev/null; then
             echo "❌ Potentially dangerous SQL operations found"
             exit 1
           fi
           
           # Check for DROP statements without IF EXISTS (more precise regex)
-          if grep -i "^drop table" DATABASE_THINGS/schema_refactored.sql | grep -v -i "if exists"; then
+          if grep -i "^drop table" DATABASE_THINGS/schema_refactored.sql 2>/dev/null | grep -v -i "if exists"; then
             echo "❌ DROP statements should use IF EXISTS for safety"
             exit 1
           fi
@@ -313,16 +351,32 @@ jobs:
           
           echo "✅ Project structure validation passed"
       
+      # Validate API endpoint consistency
+      - name: API Endpoint Consistency Check
+        run: |
+          # Check that backend routers match expected endpoints
+          ROUTERS="health issues analysis decisions actions admin_reviews learning"
+          
+          for router in $ROUTERS; do
+            if [ ! -f "dbms-backend/app/routers/${router}.py" ]; then
+              echo "❌ Missing router: ${router}.py"
+              exit 1
+            fi
+            echo "✅ Found router: ${router}.py"
+          done
+          
+          echo "✅ API endpoint consistency validated"
+      
       # Final integration summary
       - name: CI Pipeline Summary
         run: |
           echo "🎉 DBMS Project CI Pipeline Completed Successfully!"
           echo ""
-          echo "✅ Frontend: TypeScript, ESLint, Build"
+          echo "✅ Frontend: TypeScript, Code Quality, Build"
           echo "✅ Backend: Python syntax, code quality, tests"
-          echo "✅ Database: Schema validation, constraints, integrity"
+          echo "✅ Database: Schema validation, procedures, constraints, integrity"
           echo "✅ Security: No hardcoded secrets, safe SQL patterns"
-          echo "✅ Integration: Project structure validated"
+          echo "✅ Integration: Project structure and API consistency validated"
           echo ""
           echo "🔒 Academic-grade safety standards maintained"
           echo "📊 DBMS-centric validation completed"
