@@ -19,6 +19,8 @@ export interface AIAnalysis {
   confidence_score: number;
   model_version: string;
   analyzed_at: string;
+  baseline_metric: number;
+  severity_ratio: number;
 }
 
 export interface DecisionLog {
@@ -43,7 +45,11 @@ export interface HealingAction {
 export interface AdminReview {
   review_id: string;
   decision_id: string;
-  admin_action: string;
+  issue_id: string;
+  issue_type: string | null;
+  action_type: string | null;
+  review_status: string;
+  admin_action: string | null;
   admin_comment: string | null;
   override_flag: boolean;
   reviewed_at: string;
@@ -68,10 +74,13 @@ export interface HealthCheck {
 // System metrics interface for real-time service
 export interface SystemMetrics {
   totalIssues: number;
+  criticalIssues: number;
   totalAnalysis: number;
   totalDecisions: number;
   totalActions: number;
+  autoHealedCount: number;
   totalReviews: number;
+  pendingReviews: number;
   totalLearning: number;
   isConnected: boolean;
   lastUpdate: Date;
@@ -83,6 +92,23 @@ export interface SystemMetrics {
   lastError?: string;
 }
 
+export interface PipelineEvent {
+  issue_id: string;
+  issue_type: string;
+  detected_at: string;
+  severity: string;
+  confidence: number;
+  decision_type: string;
+  decision_reason?: string;
+  action_type?: string;
+  execution_status?: string;
+  execution_mode?: string;
+  learning_outcome?: string;
+  review_status?: string;
+  process_state: 'ANALYZED' | 'DECIDED' | 'WAITING_REVIEW' | 'EXECUTING' | 'FINISHED';
+  outcome: 'SUCCESS' | 'FAILED' | 'REJECTED' | 'PENDING';
+}
+
 export interface RealtimeData {
   systemMetrics: SystemMetrics;
   recentIssues: DetectedIssue[];
@@ -91,4 +117,5 @@ export interface RealtimeData {
   recentDecisions: DecisionLog[];
   recentLearning: LearningHistory[];
   recentReviews: AdminReview[];
+  recentEvents: PipelineEvent[];
 }
