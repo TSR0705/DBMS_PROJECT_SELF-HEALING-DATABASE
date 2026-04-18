@@ -28,20 +28,24 @@ export default function AIAnalysisPage() {
 
   const { recentAnalysis, systemMetrics } = data;
 
-  // Calculate real stats from data
-  const highSeverityCount = recentAnalysis.filter(
-    a => a.severity_level === 'HIGH'
+  // Calculate real stats from data with robust handling
+  const analysisList = Array.isArray(recentAnalysis) ? recentAnalysis : [];
+
+  const highSeverityCount = analysisList.filter(
+    a => a.severity_level === 'CRITICAL' || a.severity_level === 'HIGH'
   ).length;
-  const avgConf =
-    recentAnalysis.length > 0
-      ? recentAnalysis.reduce((sum, a) => sum + a.confidence_score, 0) /
-        recentAnalysis.length
-      : 0;
-  const latestModel =
-    recentAnalysis.length > 0 ? recentAnalysis[0].model_version : 'Unknown';
+
+  const totalConf = analysisList.reduce((sum, a) => {
+    const val = Number(a.confidence_score);
+    return sum + (Number.isNaN(val) ? 0 : val);
+  }, 0);
+
+  const avgConf = analysisList.length > 0 ? totalConf / analysisList.length : 0;
+  
+  const latestModel = analysisList.length > 0 ? analysisList[0].model_version : 'v1.0';
 
   const stats = {
-    totalAnalyses: recentAnalysis.length,
+    totalAnalyses: analysisList.length,
     highSeverity: highSeverityCount,
     avgConfidence: Math.round(avgConf * 100),
     latestModel,
@@ -50,33 +54,67 @@ export default function AIAnalysisPage() {
   const columns: DataTableColumn<AIAnalysis>[] = [
     {
       key: 'analysis_id',
-      header: 'Analysis ID',
+      header: 'ID',
+      className: 'w-20',
       render: value => (
-        <span className="font-mono text-sm bg-slate-100 px-2 py-1 rounded">
+        <span className="font-mono text-xs bg-slate-100 px-2 py-1 rounded">
           #{value}
         </span>
       ),
     },
     {
       key: 'issue_id',
-      header: 'Issue ID',
+      header: 'Issue',
+      className: 'w-20',
       render: value => (
-        <span className="font-mono text-sm text-blue-600">#{value}</span>
+        <span className="font-mono text-xs text-blue-600 font-bold">#{value}</span>
       ),
     },
     {
       key: 'predicted_issue_class',
       header: 'Predicted Class',
+      className: 'w-48',
       render: value => (
-        <span className="font-semibold text-slate-900">{value}</span>
+        <span className="font-semibold text-sm text-slate-800 tracking-tight">
+          {String(value).replace(/_/g, ' ')}
+        </span>
       ),
+    },
+    {
+      key: 'severity_ratio',
+      header: 'Ratio',
+      className: 'w-24',
+      render: value => {
+        if (Number.isNaN(value)) return "0.00";
+        const num = Number(value);
+        return (
+          <span className={`font-mono text-sm font-bold ${num > 1.5 ? 'text-red-600' : 'text-slate-600'}`}>
+            {num.toFixed(2)}x
+          </span>
+        );
+      },
+    },
+    {
+      key: 'baseline_metric',
+      header: 'Baseline',
+      className: 'w-28',
+      render: value => {
+        if (Number.isNaN(value)) return "0.00";
+        const num = Number(value);
+        return (
+          <span className="text-sm font-medium text-slate-500 italic">
+            {num.toFixed(2)}
+          </span>
+        );
+      },
     },
     {
       key: 'severity_level',
       header: 'Severity',
+      className: 'w-32',
       render: value => {
         const variant =
-          value === 'HIGH'
+          value === 'CRITICAL' || value === 'HIGH'
             ? 'error'
             : value === 'MEDIUM'
               ? 'warning'
@@ -87,8 +125,9 @@ export default function AIAnalysisPage() {
     {
       key: 'risk_type',
       header: 'Risk Type',
+      className: 'w-40',
       render: value => (
-        <span className="text-sm text-slate-600 bg-orange-50 px-2 py-1 rounded">
+        <span className="text-[10px] font-bold text-orange-700 bg-orange-50 border border-orange-100 px-2 py-0.5 rounded uppercase tracking-wider">
           {value}
         </span>
       ),
@@ -96,38 +135,47 @@ export default function AIAnalysisPage() {
     {
       key: 'confidence_score',
       header: 'Confidence',
-      render: value => (
-        <div className="flex items-center space-x-2">
-          <div className="w-16 bg-slate-200 rounded-full h-2">
-            <div
-              className="bg-green-500 h-2 rounded-full"
-              style={{
-                width: `${typeof value === 'number' ? value * 100 : 0}%`,
-              }}
-            />
+      className: 'w-44',
+      render: value => {
+        const pct = typeof value === 'number' ? Math.round(value * 100) : 0;
+        return (
+          <div className="flex items-center space-x-3">
+            <div className="w-24 bg-slate-100 rounded-full h-2 flex-shrink-0">
+              <div
+                className="bg-green-500 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <span className="text-sm font-bold tabular-nums w-8 text-right text-slate-700">
+              {pct}%
+            </span>
           </div>
-          <span className="text-sm font-medium">
-            {typeof value === 'number' ? Math.round(value * 100) : 0}%
-          </span>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: 'model_version',
       header: 'Model',
+      className: 'w-24',
       render: value => (
-        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+        <span className="text-[10px] font-mono bg-purple-50 text-purple-600 border border-purple-100 px-2 py-0.5 rounded-full font-bold">
           {value}
         </span>
       ),
     },
     {
       key: 'analyzed_at',
-      header: 'Analyzed At',
+      header: 'Date',
+      className: 'w-44',
       render: value => (
-        <span className="text-sm text-slate-500">
-          {new Date(value).toLocaleString()}
-        </span>
+        <div>
+          <div className="text-xs font-semibold text-slate-800">
+            {new Date(value).toLocaleDateString()}
+          </div>
+          <div className="text-[11px] text-slate-500">
+            {new Date(value).toLocaleTimeString()}
+          </div>
+        </div>
       ),
     },
   ];
@@ -207,7 +255,7 @@ export default function AIAnalysisPage() {
           description="Breakdown of issue severity levels"
         >
           <div className="space-y-4">
-            {['HIGH', 'MEDIUM', 'LOW'].map(severity => {
+            {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(severity => {
               const count = recentAnalysis.filter(
                 a => a.severity_level === severity
               ).length;
@@ -225,7 +273,7 @@ export default function AIAnalysisPage() {
                     <StatusBadge
                       status={severity}
                       variant={
-                        severity === 'HIGH'
+                        severity === 'CRITICAL' || severity === 'HIGH'
                           ? 'error'
                           : severity === 'MEDIUM'
                             ? 'warning'
@@ -238,7 +286,7 @@ export default function AIAnalysisPage() {
                     <div className="w-20 bg-slate-200 rounded-full h-2">
                       <div
                         className={`h-2 rounded-full ${
-                          severity === 'HIGH'
+                          severity === 'CRITICAL' || severity === 'HIGH'
                             ? 'bg-red-500'
                             : severity === 'MEDIUM'
                               ? 'bg-yellow-500'
