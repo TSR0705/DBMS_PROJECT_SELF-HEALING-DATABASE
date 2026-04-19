@@ -61,20 +61,20 @@ export function DataTable<T>({
 
   return (
     <div
-      className={`bg-white border border-slate-200 overflow-hidden ${className}`}
+      className={`bg-white/80 backdrop-blur-xl border border-slate-200/60 shadow-xl shadow-slate-200/40 rounded-2xl overflow-hidden transition-all duration-300 ${className}`}
     >
       {/* Table header */}
-      <div className="border-b border-slate-200">
+      <div className="border-b border-slate-200/60 bg-slate-50/40">
         <Table>
           <TableHeader>
             <TableRow className="border-none hover:bg-transparent">
               {expandableRender && (
-                <TableHead className="w-10 bg-slate-50" />
+                <TableHead className="w-10" />
               )}
               {columns.map(column => (
                 <TableHead
                   key={String(column.key)}
-                  className={`text-xs font-semibold text-slate-700 uppercase tracking-wider px-4 py-3 bg-slate-50 ${column.className || ''}`}
+                  className={`text-[10px] font-bold text-slate-500 uppercase tracking-widest px-6 py-4 ${column.className || ''}`}
                 >
                   {column.header}
                 </TableHead>
@@ -122,7 +122,7 @@ export function DataTable<T>({
             ) : (
               data.map((row, rowIndex) => (
                 <React.Fragment key={rowIndex}>
-                  <TableRow className="border-b border-slate-100 hover:bg-slate-50 transition-colors duration-150">
+                  <TableRow className="border-b border-slate-100/50 hover:bg-slate-50/50 transition-colors duration-200 group">
                     {expandableRender && (
                       <TableCell className="px-4 py-3">
                         <button
@@ -156,7 +156,7 @@ export function DataTable<T>({
                     return (
                       <TableCell
                         key={String(column.key)}
-                        className={`text-sm px-4 py-3 ${column.className || ''}`}
+                        className={`text-sm px-6 py-4 ${column.className || ''}`}
                       >
                         {column.render
                           ? column.render(value, row, rowIndex)
@@ -186,12 +186,12 @@ export function DataTable<T>({
 
       {/* Footer with data count */}
       {data.length > 0 && (
-        <div className="bg-slate-50 border-t border-slate-200 px-4 py-2">
-          <div className="flex items-center justify-between text-xs text-slate-600">
-            <span className="font-medium">
+        <div className="bg-transparent border-t border-slate-100/50 px-6 py-3">
+          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-400 uppercase tracking-widest">
+            <span>
               {data.length} {data.length === 1 ? 'record' : 'records'}
             </span>
-            <span className="font-mono">
+            <span className="font-mono bg-slate-50 px-2 py-1 rounded-md border border-slate-100/50">
               Updated: {new Date().toLocaleTimeString()}
             </span>
           </div>
