@@ -6,34 +6,78 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-00a393)](#)
 [![MySQL](https://img.shields.io/badge/MySQL-8.0-blue)](#)
 
-A state-of-the-art anomaly resolution framework bridging modern web technologies and a self-repairing SQL transaction pipeline.
+> **The state-of-the-art anomaly resolution framework bridging modern web technologies and a self-repairing SQL transaction pipeline.**
 
 ---
 
-## ⚡ The Value Proposition
-Modern databases execute thousands of transactions per second. Deadlocks, slow query avalanches, and connection overloads usually require a Database Administrator to surgically kill connections or roll back logic.
+## 🌟 The Vision
+Manual database administration is a bottleneck. In high-concurrency environments, deadlocks and slow queries can cascade into system-wide outages. Our **Self-Healing Engine** monitors the database pulse and takes autonomous corrective action before minor issues become catastrophic failures.
 
-**We automated this.**
-
-This project simulates an AI-layer sitting on top of `MySQL`. When the trigger engine detects anomalies like `DEADLOCK`, the Self-Healing backend automatically analyzes the threat weight, determines a "Confidence Score," and autonomously executes structural repairs in real-time. If the AI confidence is below our strict 85% threshold, the anomaly is quarantined into a visually stunning, Glassmorphism-style React UI for manual Admin Approval.
-
----
-
-## 📚 Technical Documentation Structure
-
-All deep-dive technical explanations and setup guides have been historically preserved and elegantly organized into our `docs/` folder structure:
-
-- 🏛️ **[System Architecture](./docs/Architecture.md)** - Review our API, Frontend, and Database stack layout.
-- ⚙️ **[The Self Healing Engine](./docs/SelfHealingEngine.md)** - Deep dive into our transaction hooks and scoring mechanics.
-- 🚀 **[Getting Started Guide](./docs/GettingStarted.md)** - Step-by-step tutorial to spin this project up locally.
-- 🔌 **[API Reference](./docs/API_Reference.md)** - Details on our FastAPI JSON payloads.
-
-*(Note: Prior unstructured markdown audits and legacy DB snapshots have been moved into `/archive_docs` for historical purposes).*
+### Key Pillars:
+- **Autonomous Detection**: Monitoring triggers capture issues in real-time.
+- **AI-Driven Confidence**: Logic engines assign risk scores to every anomaly.
+- **One-Click Override**: Premium Admin UI for human-in-the-loop validation.
+- **Safety First**: Deterministic rulebooks prevent dangerous mutations.
 
 ---
 
-## ✨ Features
-1. **Autonomous Anomaly Detection**: Built-in triggers continuously record transactional strain and blockages.
-2. **Confidence-Based Routing**: Strict internal policies decide if a `DEADLOCK` can be fixed via rule-based commands natively, or if it needs routing to a human.
-3. **Control Center Dashboard**: An ultra-premium React interface enabling Admins to visually see what decisions the Database is making, and inject manual overrides (`APPROVE`/`REJECT`).
-4. **Learning Module**: The AI simulates incrementing its success criteria the more often an Admin approves a specific action type.
+## 🚀 Quick Navigation
+
+Explore our comprehensive documentation suite for deep technical insights:
+
+| 📍 Topic | 📁 Documentation Link |
+| :--- | :--- |
+| **Blueprint** | [System Architecture](./docs/Architecture.md) |
+| **Logic** | [The Self-Healing Engine](./docs/Healing_Engine_Design.md) |
+| **Database** | [Database Design & ERD](./docs/Database_Design.md) |
+| **Guides** | [Setup & Installation Guide](./docs/Setup_Guide.md) |
+| **API** | [Technical API Reference](./docs/API_Documentation.md) |
+| **Design** | [UI/UX Design System](./docs/UI_Design_System.md) |
+
+---
+
+## 📊 High-Level Architecture
+
+```mermaid
+graph LR
+    User([Administrator]) <--> Dashboard[Next.js UI]
+    Dashboard <--> Backend[FastAPI Orchestrator]
+    Backend <--> MySQL[(MySQL Database)]
+    MySQL --> Triggers{Auto-Detection}
+    Triggers --> Backend
+```
+
+---
+
+## ✨ Primary Features
+
+### 1. Adaptive Rulebook
+A dynamic scoring system that knows precisely when a `DEADLOCK` can be auto-healed (95% confidence) vs when a `SLOW_QUERY` requires a manual architectural review.
+
+### 2. Premium Admin Control Center
+A stunning, **Glassmorphism-styled dashboard** providing:
+- Real-time transaction monitoring.
+- Aggregate health statistics.
+- Interactive decision approval/rejection grids.
+
+### 3. Integrated Learning Module
+As the human administrator approves or rejects healing actions, the internal meta-data incrementally adjusts confidence scores, evolving toward a fully autonomous "Zero-Human" state.
+
+---
+
+## 🛠️ Tech Stack
+- **Frontend**: Next.js 14, Tailwind CSS, Lucide Icons, Shadcn UI.
+- **Backend**: Python 3.12, FastAPI, SQLAlchemy, Pydantic.
+- **Database**: MySQL 8.0 with Native SQL Triggering.
+
+---
+
+## 🛡️ Safety & Security
+To prevent accidental data loss, the engine operates under strict **Safety Guards**:
+- Blocked DDL operations (DROP, TRUNCATE).
+- Simulated healing execution (Log-only mode).
+- Deterministic, verifiable rule hierarchies.
+
+---
+
+© 2026 DBMS Self-Healing Team. Built for performance, designed for resilience.
