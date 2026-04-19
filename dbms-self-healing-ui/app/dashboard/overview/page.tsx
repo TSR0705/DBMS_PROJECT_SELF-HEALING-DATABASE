@@ -58,6 +58,7 @@ export default function SystemOverview() {
     {
       key: 'issue_type',
       header: 'Issue Type',
+      className: 'w-[15%]',
       render: (val, row) => (
         <div className="flex flex-col group-hover:translate-x-1 transition-transform duration-300">
           <span className="font-extrabold text-slate-800 tracking-tight">{val}</span>
@@ -68,6 +69,7 @@ export default function SystemOverview() {
     {
       key: 'review_status',
       header: 'Status & Priority',
+      className: 'w-[25%]',
       render: (val, row) => (
         <div className="flex items-center space-x-3">
           <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider shadow-sm transition-colors ${
@@ -85,6 +87,7 @@ export default function SystemOverview() {
     {
       key: 'decision_id',
       header: 'Confidence',
+      className: 'w-[20%]',
       render: (_, row) => {
         const analysis = data.recentAnalysis.find(a => a.issue_id === row.issue_id);
         const score = analysis?.confidence_score || 0;
@@ -94,6 +97,7 @@ export default function SystemOverview() {
     {
       key: 'action_type',
       header: 'Suggested Action',
+      className: 'w-[20%]',
       render: (val) => (
         <span className="font-bold tracking-tight text-indigo-700 bg-indigo-50/80 px-2.5 py-1 rounded-lg text-[11px] border border-indigo-100 shadow-sm">
           {val || 'PENDING ANALYSIS'}
@@ -103,7 +107,7 @@ export default function SystemOverview() {
     {
       key: 'review_id',
       header: 'Actions',
-      className: 'text-right',
+      className: 'text-right w-[20%]',
       render: (val, row) => (
         <div className="flex justify-end space-x-2">
           {row.review_status === 'PENDING' ? (
@@ -261,8 +265,7 @@ function ConfidenceBar({ score }: { score: number }) {
   
   return (
     <div className="w-full max-w-[140px] space-y-1.5 group">
-      <div className="flex justify-between text-[10px] font-black tracking-tight text-slate-500 uppercase">
-        <span>Confidence</span>
+      <div className="flex justify-end text-[10px] font-black tracking-tight">
         <span className={percentage > 80 ? 'text-emerald-600' : percentage > 50 ? 'text-amber-600' : 'text-rose-600'}>{percentage}%</span>
       </div>
       <div className="w-full h-2 bg-slate-100/80 shadow-inner rounded-full overflow-hidden p-px">
