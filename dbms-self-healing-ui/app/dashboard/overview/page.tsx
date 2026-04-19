@@ -235,8 +235,8 @@ export default function SystemOverview() {
       </Section>
 
       {/* 3. Action Layer (Smart Tables) */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <div className="xl:col-span-2">
+      <div className="flex flex-col gap-10">
+        <div className="w-full">
           <Section title="Admin Control Center" description="Prioritized manual review requests requiring expert intervention.">
             <DataTable 
               columns={reviewColumns} 
@@ -245,7 +245,7 @@ export default function SystemOverview() {
             />
           </Section>
         </div>
-        <div>
+        <div className="w-full">
           <Section title="Learning Ecosystem" description="Post-action confidence improvements.">
             <DataTable columns={learningColumns} data={recentLearning} />
           </Section>
