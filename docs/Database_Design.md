@@ -1,27 +1,30 @@
 # 🗄️ Database Design & Schema
 
-This project relies on a highly structured relational schema that not only stores application data but also acts as the source-of-truth for the **Self-Healing Engine**.
+This project relies on a highly structured relational schema that not only stores application data but also acts as the source-of-truth for the **Self-Healing Engine**. The database is not just a passive store; it actively executes complex logic via stored procedures and triggers.
 
 ---
 
 ## 📊 Entity Relationship Diagram (ERD)
 
-The following diagram illustrates how issue detection propagates through the analysis and decision layers.
+The following diagram illustrates the complete ecosystem, including rule management and cache layers.
 
 ```mermaid
 erDiagram
     DETECTED_ISSUES ||--o| DECISION_LOG : "triggers"
     DECISION_LOG ||--o| HEALING_ACTIONS : "executes"
     DECISION_LOG ||--o| ADMIN_REVIEWS : "requests"
+    DECISION_LOG ||--o| LEARNING_HISTORY : "updates"
     DETECTED_ISSUES ||--o| AI_ANALYSIS : "analyzes"
-    HEALING_ACTIONS ||--o| LEARNING_HISTORY : "records"
+    ACTION_RULES ||--o| HEALING_ACTIONS : "defines"
+    DETECTED_ISSUES ||--o| ISSUE_DETECTION_CACHE : "throttles"
 
     DETECTED_ISSUES {
         bigint issue_id PK
-        enum issue_type
+        string issue_type
         enum detection_source
         decimal raw_metric_value
         string raw_metric_unit
+        bigint issue_group_id
         timestamp detected_at
     }
 
@@ -30,9 +33,16 @@ erDiagram
         bigint issue_id FK
         string predicted_issue_class
         enum severity_level
-        string risk_type
         decimal confidence_score
-        string model_version
+        decimal baseline_metric
+        decimal severity_ratio
+    }
+
+    ACTION_RULES {
+        int rule_id PK
+        string issue_type UK
+        string action_type UK
+        boolean is_automatic
     }
 
     DECISION_LOG {
@@ -46,27 +56,23 @@ erDiagram
     HEALING_ACTIONS {
         bigint action_id PK
         bigint decision_id FK
-        enum action_type
+        string action_type FK
         enum execution_mode
-        enum executed_by
         enum execution_status
     }
 
     ADMIN_REVIEWS {
         bigint review_id PK
         bigint decision_id FK
-        enum admin_action
-        string admin_comment
+        string review_status
+        string admin_action
         boolean override_flag
     }
 
-    LEARNING_HISTORY {
-        bigint learning_id PK
-        string issue_type
-        string action_type
-        enum outcome
-        decimal confidence_before
-        decimal confidence_after
+    ISSUE_DETECTION_CACHE {
+        bigint cache_id PK
+        string issue_signature UK
+        timestamp last_detected_at
     }
 ```
 
@@ -74,43 +80,52 @@ erDiagram
 
 ## 🏗️ Table Specifications
 
-### 1. `detected_issues`
-The landing table for all system anomalies.
-- **Key Columns**: `issue_type` (`DEADLOCK`, `SLOW_QUERY`, etc.) and `detection_source`.
-- **Purpose**: Permanent audit log of every anomaly caught by the monitoring triggers.
+### 1. `action_rules` [NEW]
+The manual knowledge base of the system.
+- **Purpose**: Map `issue_type` to a specific `action_type`.
+- **Throttling**: Defines whether an action can be executed `is_automatic`.
 
 ### 2. `ai_analysis`
-Stores the output of the classification engine.
-- **Key Columns**: `severity_level` (LOW/MEDIUM/HIGH) and `confidence_score`.
-- **Purpose**: Provides the "Brain" metadata for the Decision Engine to act upon.
+Stores the output of the classification and statistical engine.
+- **Key Columns**: `baseline_metric` (24h average) and `severity_ratio` (Z-score).
+- **Purpose**: Normalizes raw metrics into actionable severity levels.
 
-### 3. `decision_log`
-The "Command & Control" table.
-- **Key Columns**: `decision_type` (`AUTO_HEAL` or `ADMIN_REVIEW`).
-- **Purpose**: Tracks what the system *intended* to do for every detected issue.
+### 3. `admin_reviews`
+The gateway for manual intervention.
+- **Key Columns**: `review_status` (PENDING/APPROVED/REJECTED).
+- **Update Logic**: Now uses `varchar` instead of `enum` for flexibility in manual overrides.
 
-### 4. `healing_actions`
-Logs the *execution* of the recovery.
-- **Key Columns**: `execution_status` (`SUCCESS`/`FAILED`).
-- **Purpose**: Tracks the actual outcome of automated repairs.
+### 4. `issue_detection_cache` [NEW]
+- **Purpose**: Prevents "Alert Fatigue" by anchoring detections to unique signatures, ensuring the pipeline isn't flooded with redundant issues.
+
+---
+
+## ⚙️ Stored Procedures & Logic Engine
+
+Unlike traditional DBs, this system executes its core logic within the database layer for maximum performance and atomicity.
+
+| Procedure | Purpose |
+| :--- | :--- |
+| `run_auto_heal_pipeline` | The main orchestrator that processes pending issues. |
+| `run_ai_analysis` | Computes statistical baselines (Z-scores) to determine severity. |
+| `make_decision` | Evaluates AI confidence vs Historical Success to choose AUTO vs ADMIN. |
+| `execute_healing_action` | Dispatches the recovery command based on the decision. |
+| `update_learning` | Adjusts confidence scores for future decisions based on results. |
 
 ---
 
 ## ⚡ SQL Triggers & Automation
 
-The database provides native automation to bridge these tables.
-
-### `after_issue_insert`
-Automatically populates the `decision_log` immediately after a new issue is detected.
-- **Logic**: 
-  - If `DEADLOCK` -> Set for `AUTO_HEAL`.
-  - Else -> Set for `ADMIN_REVIEW`.
+### `run_automatic_detection`
+Called externally to poll system state (Live Traffic, Locks, Connections) and populate `detected_issues`.
 
 ### `after_decision_insert`
-Creates an entry in `admin_reviews` if the decision was routed to a human, or `healing_actions` if it was routed to the engine.
+A post-analysis trigger that routes the flow:
+- **If AUTO_HEAL**: Immediately invokes `execute_healing_action`.
+- **If ADMIN_REVIEW**: Populates the Admin Control Center for human verification.
 
 ---
 
 ## 🔒 Integrity Constraints
-- **Foreign Keys**: Cascading deletes are enforced across `issue_id` and `decision_id` to prevent orphaned metadata.
-- **Enums**: Strict enums at the DB layer prevent invalid "Healing Statuses" from being injected via the API.
+- **Recursive Safety**: `ISSUE_DETECTION_CACHE` ensures that a single SLOW_QUERY doesn't spawn 1000 healing events.
+- **Automatic Throttling**: The SQL layer enforces a global limit (max 5 heals/minute) to prevent cascading failures.
