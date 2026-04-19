@@ -78,6 +78,32 @@ erDiagram
 
 ---
 
+## ⚡ Pipeline Metadata Propagation
+
+The following diagram trace how an error detected at the SQL surface layer propagates through the relational schema to become a verified learning event.
+
+```mermaid
+flowchart LR
+    subgraph "Detection Phase"
+        T1[(detected_issues)] --> |PK: issue_id| T2[(ai_analysis)]
+    end
+
+    subgraph "Decision Phase"
+        T2 --> |FK: issue_id| T3[(decision_log)]
+        T3 --> |PK: decision_id| T4[(admin_reviews)]
+    end
+
+    subgraph "Execution Phase"
+        T3 --> |FK: decision_id| T5[(healing_actions)]
+        T5 --> |PK: action_id| T6[(learning_history)]
+    end
+    
+    style T1 fill:#f9f,stroke:#333,stroke-width:2px
+    style T6 fill:#6f6,stroke:#333,stroke-width:2px
+```
+
+---
+
 ## 🏗️ Table Specifications
 
 ### 1. `action_rules` [NEW]

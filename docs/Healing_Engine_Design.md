@@ -8,21 +8,43 @@ The **Self-Healing Engine** is a deterministic orchestrator that blends statisti
 
 The lifecycle is now driven by **Stored Procedures** at the database layer, ensuring atomic state transitions and zero-latency analysis.
 
+### 🔄 Healing Lifecycle State Machine
+
+The following state diagram illustrates the complex transitions an anomaly undergoes from detection to permanent archival.
+
 ```mermaid
 stateDiagram-v2
-    [*] --> Detection : polling / triggers
-    Detection --> AI_Analysis : procedure: run_ai_analysis
-    AI_Analysis --> Decision : procedure: make_decision
+    [*] --> DETECTED: SQL Trigger / Metric Poll
     
-    state Decision <<choice>>
-    Decision --> AutoHeal : score >= 0.50
-    Decision --> AdminReview : score < 0.50 or Throttled
+    state DETECTED {
+        direction LR
+        RawMetric --> Signature: Unique Hash
+        Signature --> Throttled?: Check Cache
+    }
     
-    AutoHeal --> Execution : procedure: execute_healing_action
-    AdminReview --> ManualApproval : PENDING in admin_reviews
+    DETECTED --> ANALYZING: procedure: run_ai_analysis
+    ANALYZING --> DECIDING: procedure: make_decision
     
-    Execution --> Learning : procedure: update_learning
-    Learning --> [*]
+    state DECIDING {
+        direction LR
+        Score_Low --> PENDING_REVIEW: Confidence < 85%
+        Score_High --> AUTO_HEAL: Confidence >= 85%
+    }
+    
+    PENDING_REVIEW --> APPROVED: Admin Approval
+    PENDING_REVIEW --> REJECTED: Admin Rejection
+    
+    AUTO_HEAL --> EXECUTING: Global Safety Check
+    APPROVED --> EXECUTING
+    
+    EXECUTING --> VERIFYING: Wait for Stabilization
+    VERIFYING --> RESOLVED: Metric Normal
+    VERIFYING --> ESCALATED: Metric Still High
+    
+    REJECTED --> ARCHIVED: feedback_loop
+    RESOLVED --> ARCHIVED: success_log
+    
+    ARCHIVED --> [*]
 ```
 
 ---
@@ -38,13 +60,31 @@ $$Z = \frac{x - \mu}{\sigma}$$
 *   **HIGH**: $Z \ge 2.0$ or $\ge 3$ anomalies in 2 hours.
 *   **MEDIUM**: $Z \ge 1.0$.
 
-### 2. Weighted Decision Score
-A final decision score (0.0 to 1.0) is calculated in `make_decision` using three vectors:
-| Vector | Weight | Logic |
-| :--- | :--- | :--- |
-| **Severity Weight** | 50% | Maps CRITICAL/HIGH/MEDIUM to 1.0/0.7/0.4. |
-| **AI Confidence** | 30% | Normalization of the model's prediction confidence. |
-| **Success Factor** | 20% | Historical resolution rate (Success / Total Attempts). |
+### 🧠 Decision Scoring Logic
+
+The scoring engine calculates a **Unified Confidence Rating** by aggregating statistical severities, rule-book priorities, and historical reliability.
+
+```mermaid
+flowchart TD
+    Anom([New Anomaly]) --> Rules{Rule LookUp}
+    
+    Rules -- No Match --> Default[Apply Global Baseline: 0.50]
+    Rules -- Match Found --> Weight[Fetch Base Rule Weight]
+    
+    Weight --> History{Historical Review}
+    History -- Rejected Pattern --> Penalize[Decrease Score: -0.20]
+    History -- Approved Pattern --> Boost[Increase Score: +0.15]
+    
+    Penalize --> Calc[Weighted Sum Calculation]
+    Boost --> Calc
+    Default --> Calc
+    
+    Calc --> Stats[Apply Z-Score Multiplier]
+    Stats --> Final{Threshold Check}
+    
+    Final -- "> 0.85" --> Auto[AUTO_HEAL]
+    Final -- "< 0.85" --> Review[ADMIN_REVIEW]
+```
 
 ---
 

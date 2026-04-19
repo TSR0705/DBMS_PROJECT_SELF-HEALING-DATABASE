@@ -36,15 +36,36 @@ Explore our comprehensive documentation suite for deep technical insights:
 
 ---
 
-## 📊 High-Level Architecture
+## 📊 System Control Flow
 
 ```mermaid
-graph LR
-    User([Administrator]) <--> Dashboard[Next.js UI]
-    Dashboard <--> Backend[FastAPI Orchestrator]
-    Backend <--> MySQL[(MySQL Database)]
-    MySQL --> Triggers{Auto-Detection}
-    Triggers --> Backend
+graph TD
+    subgraph "Admin Interface"
+        UI[Next.js Dashboard]
+    end
+
+    subgraph "Intelligence Layer"
+        Backend[FastAPI Orchestrator]
+        DecisionEng[Weighted Decision Logic]
+    end
+
+    subgraph "Data & Sensing Layer"
+        DB[(MySQL Production)]
+        Triggers[Native SQL Triggers]
+    end
+
+    %% Flow
+    DB -- "1. Anomaly Captured" --> Triggers
+    Triggers -- "2. Event Logged" --> DB
+    Backend -- "3. Query Sync" --> DB
+    Backend -- "4. Analyze" --> DecisionEng
+    DecisionEng -- "5. Decision Logic" --> Backend
+    
+    Backend -- "6a. Auto-Action (High Confidence)" --> DB
+    Backend -- "6b. Flag for Review (Low Confidence)" --> UI
+    
+    UI -- "7. Human Override" --> Backend
+    Backend -- "8. Update Learning History" --> DB
 ```
 
 ---

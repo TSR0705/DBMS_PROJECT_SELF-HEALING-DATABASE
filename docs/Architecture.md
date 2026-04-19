@@ -47,6 +47,31 @@ graph TD
     DB <--> Triggers
 ```
 
+### ⚡ Dynamic Interaction Sequence
+
+The following sequence diagram illustrates the lifecycle of a **High-Confidence Auto-Healing** event:
+
+```mermaid
+sequenceDiagram
+    participant DB as MySQL Database
+    participant BE as FastAPI Backend
+    participant DE as Decision Engine
+    participant UI as Admin Dashboard
+
+    Note over DB: Anomaly Detected (e.g. Deadlock)
+    DB->>DB: SQL Trigger: Log to detected_issues
+    BE->>DB: Periodic Sync / Event Hook
+    DB-->>BE: Fetch New Anomalies
+    BE->>DE: Request Confidence Analysis
+    DE->>DB: Fetch Learning History & Rules
+    DB-->>DE: Historical Data
+    DE-->>BE: Confidence Score: 95% (AUTO)
+    BE->>DB: Execute Healing Procedure
+    DB-->>BE: Success Status
+    BE->>UI: Broadcast Update (WebSocket/Polling)
+    UI->>UI: Pulse Animation on Grid
+```
+
 ---
 
 ## 💻 Technology Stack
@@ -82,3 +107,24 @@ To prevent accidental data corruption during development or simulation:
 - **Simulated Execution**: Healing actions (like `KILL_CONNECTION` or `ROLLBACK`) are currently logged and simulated rather than performed on live production threads.
 - **Trigger Isolation**: SQL triggers operate purely on logging tables, ensuring the core application tables remain unaffected by the healing engine's metadata overhead.
 - **Strict Validation**: Pydantic models ensure that no malformed data can reach the healing engines, preventing "cascaded failures."
+
+### 🛡️ Safety Guard Flowchart
+
+Before any action is taken, the system passes through a multi-tier safety validation:
+
+```mermaid
+flowchart TD
+    Start([Initiate Action]) --> CheckGlobal{Global Kill Switch ON?}
+    CheckGlobal -- No --> Abort([Log & Abort])
+    CheckGlobal -- Yes --> CheckSaves{Is Safe to Run?}
+    
+    CheckSaves --> |No| Manual[Flag for Manual Override]
+    CheckSaves --> |Yes| Throttle{Under Rate Limit?}
+    
+    Throttle -- No --> Wait[Queue for Next Cycle]
+    Throttle -- Yes --> Execute[Execute Action]
+    
+    Execute --> Log[Update decision_log]
+    Log --> Verify{Verify Effect}
+    Verify --> End([Process Complete])
+```

@@ -16,3 +16,23 @@ The backend pipeline categorizes an incoming anomaly through simulated AI trigge
    - `> 0.85` -> Proceed to `healing_actions`.
    - `< 0.85` -> Create record in `admin_reviews`.
 4. The React User Interface acts as the monitoring and override interface for pending decisions.
+
+### 🔄 Human-in-the-Loop Learning Loop
+
+The system evolves through continuous feedback from administrators. Every manual action refines the engine's future reliability.
+
+```mermaid
+graph LR
+    subgraph "The Learning Cycle"
+        Decision[Engine Decision] --> |Low Confidence| Review[Admin Review]
+        Review --> |Approval/Rejection| Metadata[Learning History]
+        Metadata --> |Stat Weights| Engine[Refined Logic]
+        Engine --> Decision
+    end
+    
+    subgraph "Outcomes"
+        Decision --> |High Confidence| Auto[Auto Execution]
+        Auto --> Success[Positive Feedback]
+        Success --> Metadata
+    end
+```
