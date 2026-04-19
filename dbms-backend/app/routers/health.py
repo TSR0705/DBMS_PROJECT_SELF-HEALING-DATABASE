@@ -61,7 +61,7 @@ async def get_database_health():
         }
         
     except Exception as e:
-        logger.error(f"Database health check failed: {e}")
+        logger.exception(f"Database health check failed: {e}")
         raise HTTPException(
             status_code=503,
             detail={
