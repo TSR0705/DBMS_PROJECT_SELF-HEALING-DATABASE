@@ -158,16 +158,16 @@ jobs:
       # Validate main schema file exists and is readable
       - name: Validate Schema File Exists
         run: |
-          if [ ! -f "DATABASE_THINGS/schema_refactored.sql" ]; then
+          if [ ! -f "dbms_self_healing.sql" ]; then
             echo "❌ Schema file not found"
             exit 1
           fi
-          echo "✅ Schema file found: DATABASE_THINGS/schema_refactored.sql"
+          echo "✅ Schema file found: dbms_self_healing.sql"
       
-      # Load and validate database schema - CRITICAL STEP
+      # Load and validate database database - CRITICAL STEP
       - name: Load Database Schema
         run: |
-          mysql -h 127.0.0.1 -P 3306 -u root -pci_test_password_123 dbms_self_healing_test < DATABASE_THINGS/schema_refactored.sql
+          mysql -h 127.0.0.1 -P 3306 -u root -pci_test_password_123 dbms_self_healing_test < dbms_self_healing.sql
           echo "✅ Database schema loaded successfully"
       
       # Load AI Engine procedures
@@ -394,13 +394,13 @@ jobs:
       - name: SQL Security Validation
         run: |
           # Check for potentially dangerous SQL patterns in schema files
-          if grep -i "truncate\|drop.*database" DATABASE_THINGS/*.sql 2>/dev/null; then
+          if grep -i "truncate\|drop.*database" dbms_self_healing.sql 2>/dev/null; then
             echo "❌ Potentially dangerous SQL operations found"
             exit 1
           fi
           
           # Check for DROP statements without IF EXISTS (more precise regex)
-          if grep -i "^drop table" DATABASE_THINGS/schema_refactored.sql 2>/dev/null | grep -v -i "if exists"; then
+          if grep -i "^drop table" dbms_self_healing.sql 2>/dev/null | grep -v -i "if exists"; then
             echo "❌ DROP statements should use IF EXISTS for safety"
             exit 1
           fi
@@ -466,7 +466,7 @@ jobs:
       - name: Load Database Schema and Procedures
         run: |
           # Load schema
-          mysql -h 127.0.0.1 -P 3306 -u root -pci_test_password_123 dbms_self_healing_test < DATABASE_THINGS/schema_refactored.sql
+          mysql -h 127.0.0.1 -P 3306 -u root -pci_test_password_123 dbms_self_healing_test < dbms_self_healing.sql
           
           # Load procedures
           for file in dbms-backend/app/database/sql/ai_engine/*.sql; do
@@ -550,7 +550,7 @@ jobs:
       - name: Project Structure Validation
         run: |
           # Check for required files
-          REQUIRED_FILES="README.md dbms-self-healing-ui/package.json dbms-backend/requirements.txt DATABASE_THINGS/schema_refactored.sql"
+          REQUIRED_FILES="README.md dbms-self-healing-ui/package.json dbms-backend/requirements.txt dbms_self_healing.sql"
           
           for file in $REQUIRED_FILES; do
             if [ ! -f "$file" ]; then
