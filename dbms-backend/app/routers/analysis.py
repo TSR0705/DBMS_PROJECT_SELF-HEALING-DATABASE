@@ -47,19 +47,25 @@ async def get_all_analysis(
         analyses = []
         for row in results:
             try:
-                # Use explicit dictionary to bypass Pydantic serialization "exclude" logic
+                # Preserve real DB values — send null for missing fields, never default to 0
+                raw_baseline = row.get('baseline_metric')
+                raw_ratio = row.get('severity_ratio')
+                raw_confidence = row.get('confidence_score')
+                raw_analyzed_at = row.get('analyzed_at')
+
                 analysis = {
                     "analysis_id": str(row.get('analysis_id', '')),
                     "issue_id": str(row.get('issue_id', '')),
                     "predicted_issue_class": str(row.get('predicted_issue_class', 'UNKNOWN')),
                     "severity_level": str(row.get('severity_level', 'LOW')),
                     "risk_type": str(row.get('risk_type', 'UNCERTAIN')),
-                    "confidence_score": float(row.get('confidence_score', 0.0)) if row.get('confidence_score') is not None else 0.0,
+                    "confidence_score": float(raw_confidence) if raw_confidence is not None else None,
                     "model_version": str(row.get('model_version', 'v1.0')),
-                    "analyzed_at": row.get('analyzed_at').isoformat() if hasattr(row.get('analyzed_at'), 'isoformat') else str(row.get('analyzed_at')),
-                    "baseline_metric": float(row.get('baseline_metric', 0.0)) if row.get('baseline_metric') is not None else 0.0,
-                    "severity_ratio": float(row.get('severity_ratio', 0.0)) if row.get('severity_ratio') is not None else 0.0
+                    "analyzed_at": raw_analyzed_at.isoformat() if hasattr(raw_analyzed_at, 'isoformat') else str(raw_analyzed_at),
+                    "baseline_metric": float(raw_baseline) if raw_baseline is not None else None,
+                    "severity_ratio": float(raw_ratio) if raw_ratio is not None else None
                 }
+                logger.debug(f"Analysis row: baseline={raw_baseline} -> {analysis['baseline_metric']}, ratio={raw_ratio} -> {analysis['severity_ratio']}")
                 analyses.append(analysis)
             except Exception as row_error:
                 logger.warning(f"Skipping malformed row: {row_error}")
