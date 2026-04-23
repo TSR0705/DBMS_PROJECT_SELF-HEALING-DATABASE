@@ -20,6 +20,7 @@ from decimal import Decimal
 
 from ..database.connection import DatabaseConnection
 from ..rules.healing_rulebook import HealingRulebook, ActionType, ExecutionMode, ExecutionStatus
+from ..safety.safety_guards import enforce_safety_check
 
 logger = logging.getLogger(__name__)
 
@@ -151,6 +152,14 @@ class HealingEngine:
                 logger.warning(f"No AUTO_HEAL rule found for issue type: {issue_type}")
                 return None
             
+            # Enforce safety check before simulation
+            enforce_safety_check(
+                'healing_action',
+                action_type=rule.action_type.value,
+                execution_mode=rule.execution_mode.value,
+                context={'decision_id': decision_id, 'issue_type': issue_type}
+            )
+
             # Simulate the healing action
             simulation_result = self._simulate_action(rule.action_type, decision)
             
@@ -359,13 +368,9 @@ class HealingEngine:
         """
         
         try:
-            # Use a separate connection with write permissions for action logging
-            config = self.db.config.copy()
-            
-            import mysql.connector
-            with mysql.connector.connect(**config) as conn:
+            # Use the pooled connection for recording healing actions
+            with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                
                 cursor.execute(insert_query, (
                     action['action_id'],
                     action['decision_id'],
@@ -375,7 +380,6 @@ class HealingEngine:
                     action['execution_status'],
                     action['executed_at']
                 ))
-                
                 conn.commit()
                 cursor.close()
                 
