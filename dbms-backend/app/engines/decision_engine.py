@@ -280,7 +280,6 @@ class DecisionEngine:
         Returns:
             True if successful, False otherwise
         """
-        # Create a write-enabled connection for decision recording
         insert_query = """
         INSERT INTO decision_log (
             decision_id, issue_id, decision_type, decision_reason,
@@ -289,14 +288,9 @@ class DecisionEngine:
         """
         
         try:
-            # Use a separate connection with write permissions for decision logging
-            config = self.db.config.copy()
-            # Remove read-only restriction for decision recording
-            
-            import mysql.connector
-            with mysql.connector.connect(**config) as conn:
+            # Use the pooled connection for recording decisions
+            with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                
                 cursor.execute(insert_query, (
                     decision['decision_id'],
                     decision['issue_id'],
@@ -305,7 +299,6 @@ class DecisionEngine:
                     decision['confidence_at_decision'],
                     decision['decided_at']
                 ))
-                
                 conn.commit()
                 cursor.close()
                 
@@ -427,7 +420,7 @@ class DecisionEngine:
                 WHERE decision_type NOT IN ({','.join(['%s'] * len(valid_types))})
                 """
                 
-                cursor.execute(query3, valid_types)
+                cursor.execute(query3, tuple(valid_types))
                 result = cursor.fetchone()
                 validation['invalid_decision_types'] = result['count'] if result else 0
                 
