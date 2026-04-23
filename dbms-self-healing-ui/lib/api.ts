@@ -30,8 +30,8 @@ interface APIAnalysisResponse {
   severity_level: string;
   risk_type: string;
   model_version: string;
-  baseline_metric: number | string;
-  severity_ratio: number | string;
+  baseline_metric: number | string | null;
+  severity_ratio: number | string | null;
 }
 
 interface APIDecisionResponse {
@@ -164,18 +164,28 @@ class ApiClient {
 
   // Data processing helpers with proper types
   private processAnalysisData(data: any): AIAnalysis[] {
-    console.log("Processing API Data:", data);
-    
+    console.log("AI ANALYSIS API RAW RESPONSE:", data);
+
     // Ensure data is an array before processing
     const results = Array.isArray(data) ? data : [];
-    
-    return results.map(item => ({
-      ...item,
-      // Use exact table schema names and safe parsing
-      severity_ratio: this.safeNumber(item.severity_ratio),
-      baseline_metric: this.safeNumber(item.baseline_metric),
-      confidence_score: this.safeNumber(item.confidence_score)
-    })) as AIAnalysis[];
+
+    return results.map(item => {
+      const mapped: AIAnalysis = {
+        ...item,
+        // confidence_score: use real value, null if absent
+        confidence_score: (item.confidence_score !== null && item.confidence_score !== undefined)
+          ? this.safeNumber(item.confidence_score)
+          : null,
+        // severity_ratio and baseline_metric: pass through EXACTLY as returned by API
+        // DO NOT apply safeNumber() — it converts null → 0 which masks missing data
+        severity_ratio: item.severity_ratio !== undefined ? item.severity_ratio : null,
+        baseline_metric: item.baseline_metric !== undefined ? item.baseline_metric : null,
+      };
+      console.log(
+        `Analysis ${item.analysis_id}: ratio=${mapped.severity_ratio}, baseline=${mapped.baseline_metric}`
+      );
+      return mapped;
+    });
   }
 
   private processDecisionData(data: APIDecisionResponse[]): DecisionLog[] {
