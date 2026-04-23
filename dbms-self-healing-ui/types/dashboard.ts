@@ -16,11 +16,11 @@ export interface AIAnalysis {
   predicted_issue_class: string;
   severity_level: string;
   risk_type: string;
-  confidence_score: number;
+  confidence_score: number | null;
   model_version: string;
   analyzed_at: string;
-  baseline_metric: number;
-  severity_ratio: number;
+  baseline_metric: number | null;
+  severity_ratio: number | null;
 }
 
 export interface DecisionLog {
