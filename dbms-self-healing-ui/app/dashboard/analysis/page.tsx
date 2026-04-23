@@ -196,10 +196,10 @@ export default function AIAnalysisPage() {
       render: value => (
         <div>
           <div className="text-xs font-semibold text-slate-800">
-            {new Date(value).toLocaleDateString()}
+            {value ? new Date(value).toLocaleDateString() : 'N/A'}
           </div>
           <div className="text-[11px] text-slate-500">
-            {new Date(value).toLocaleTimeString()}
+            {value ? new Date(value).toLocaleTimeString() : 'N/A'}
           </div>
         </div>
       ),
@@ -344,7 +344,7 @@ export default function AIAnalysisPage() {
                 const avgConfidence =
                   recentAnalysis
                     .filter(a => a.risk_type === riskType)
-                    .reduce((sum, a) => sum + a.confidence_score, 0) / count;
+                    .reduce((sum, a) => sum + (a.confidence_score ?? 0), 0) / count;
 
                 return (
                   <div
