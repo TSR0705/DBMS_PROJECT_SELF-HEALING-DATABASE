@@ -8,6 +8,7 @@ import mysql.connector
 from mysql.connector import Error, pooling
 from typing import Optional, List, Dict, Any
 import logging
+from ..safety.safety_guards import SafetyGuards
 
 logger = logging.getLogger(__name__)
 
@@ -32,44 +33,51 @@ class DatabaseConnection:
             'use_pure': True,
         }
 
+        self.pool_size = int(os.getenv('DB_POOL_SIZE', 10))
         debug_config = self.config.copy()
         debug_config['password'] = '*' * len(debug_config['password']) if debug_config['password'] else 'EMPTY'
-        logger.info(f"Database config: {debug_config}")
+        logger.info(f"Database config: {debug_config} (Pool size: {self.pool_size})")
         self._init_pool()
 
     def _init_pool(self):
-        """Initialize connection pool (size=5) so connections are reused."""
+        """Initialize connection pool so connections are reused."""
         try:
             self._pool = pooling.MySQLConnectionPool(
                 pool_name='dbms_pool',
-                pool_size=5,
+                pool_size=self.pool_size,
                 **self.config
             )
-            logger.info("Connection pool initialized (size=5)")
+            logger.info(f"Connection pool initialized (size={self.pool_size})")
         except Error as e:
             logger.error(f"Failed to create connection pool: {e}")
             self._pool = None
 
+    def get_connection(self):
+        """
+        Public method to get a connection from the pool.
+        Supports usage as a context manager: 'with db.get_connection() as conn:'
+        """
+        if not self._pool:
+            self._init_pool()
+            
+        try:
+            conn = self._pool.get_connection()
+            return conn
+        except Exception as e:
+            logger.warning(f"Pool exhausted or failed, falling back to direct connection: {e}")
+            return mysql.connector.connect(**self.config)
+
     def _get_conn(self):
-        """Get a connection from the pool, falling back to direct connect."""
-        if self._pool:
-            return self._pool.get_connection()
-        return mysql.connector.connect(**self.config)
+        """Internal helper for backward compatibility."""
+        return self.get_connection()
 
     def execute_read_query(self, query: str, params: Optional[tuple] = None) -> List[Dict[str, Any]]:
         """
         Execute a read SQL query and return results as list of dicts.
         Only SELECT/SHOW/DESCRIBE/EXPLAIN are permitted.
         """
-        query_upper = query.strip().upper()
-        allowed_starts = ['SELECT', 'SHOW', 'DESCRIBE', 'EXPLAIN']
-        if not any(query_upper.startswith(s) for s in allowed_starts):
-            raise ValueError("Only SELECT, SHOW, DESCRIBE, and EXPLAIN queries are allowed")
-
-        dangerous_keywords = ['INSERT', 'UPDATE', 'DELETE', 'DROP', 'CREATE', 'ALTER', 'TRUNCATE']
-        for kw in dangerous_keywords:
-            if kw in query_upper:
-                raise ValueError(f"Query contains forbidden keyword: {kw}")
+        # Centralized safety check
+        SafetyGuards.validate_sql_query(query, allowed_operations=['SELECT', 'SHOW', 'DESCRIBE', 'EXPLAIN'])
 
         conn = self._get_conn()
         try:
@@ -85,6 +93,9 @@ class DatabaseConnection:
         """
         Execute a write SQL query and return rows affected.
         """
+        # Centralized safety check for writes
+        SafetyGuards.validate_sql_query(query, allowed_operations=['INSERT', 'UPDATE'])
+        
         conn = self._get_conn()
         try:
             cursor = conn.cursor()
@@ -99,6 +110,22 @@ class DatabaseConnection:
             raise
         finally:
             conn.close()  # returns to pool if pooled
+
+    def get_pool_status(self) -> Dict[str, Any]:
+        """Get current status of the connection pool."""
+        if not self._pool:
+            return {'status': 'inactive', 'pool_size': self.pool_size}
+            
+        try:
+            # pooling.MySQLConnectionPool doesn't give easy way to see 'active' connections
+            # but we can report the size and that it's initialized
+            return {
+                'status': 'active',
+                'pool_name': self._pool.pool_name,
+                'pool_size': self.pool_size
+            }
+        except Exception as e:
+            return {'status': 'error', 'error': str(e)}
 
     def test_connection(self) -> bool:
         """Test database connectivity."""
