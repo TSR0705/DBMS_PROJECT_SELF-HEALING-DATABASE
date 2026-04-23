@@ -31,6 +31,22 @@ export default function AIAnalysisPage() {
   // Calculate real stats from data with robust handling
   const analysisList = Array.isArray(recentAnalysis) ? recentAnalysis : [];
 
+  // Safe value formatter — returns "N/A" for null/undefined/NaN, never hardcodes 0
+  const safeValue = (v: number | null | undefined): string => {
+    if (v === null || v === undefined || isNaN(Number(v))) return 'N/A';
+    return Number(v).toFixed(2);
+  };
+
+  // Proof log: verify ratio and baseline come from real API data before render
+  console.log(
+    'Analysis list before render:',
+    analysisList.map(a => ({
+      id: a.analysis_id,
+      ratio: a.severity_ratio,
+      baseline: a.baseline_metric,
+    }))
+  );
+
   const highSeverityCount = analysisList.filter(
     a => a.severity_level === 'CRITICAL' || a.severity_level === 'HIGH'
   ).length;
@@ -84,12 +100,18 @@ export default function AIAnalysisPage() {
       key: 'severity_ratio',
       header: 'Ratio',
       className: 'w-24',
-      render: value => {
-        if (Number.isNaN(value)) return "0.00";
-        const num = Number(value);
+      render: (value) => {
+        // value is severity_ratio field value passed directly from DataTable
+        const display = safeValue(value as number | null);
+        console.log('Final ratio:', value, '->', display);
+        const num = value !== null && value !== undefined ? Number(value) : null;
         return (
-          <span className={`font-mono text-sm font-bold ${num > 1.5 ? 'text-red-600' : 'text-slate-600'}`}>
-            {num.toFixed(2)}x
+          <span
+            className={`font-mono text-sm font-bold ${
+              num !== null && num > 1.5 ? 'text-red-600' : 'text-slate-600'
+            }`}
+          >
+            {display === 'N/A' ? display : `${display}x`}
           </span>
         );
       },
@@ -98,12 +120,12 @@ export default function AIAnalysisPage() {
       key: 'baseline_metric',
       header: 'Baseline',
       className: 'w-28',
-      render: value => {
-        if (Number.isNaN(value)) return "0.00";
-        const num = Number(value);
+      render: (value) => {
+        const display = safeValue(value as number | null);
+        console.log('Final baseline:', value, '->', display);
         return (
           <span className="text-sm font-medium text-slate-500 italic">
-            {num.toFixed(2)}
+            {display}
           </span>
         );
       },
@@ -137,7 +159,11 @@ export default function AIAnalysisPage() {
       header: 'Confidence',
       className: 'w-44',
       render: value => {
-        const pct = typeof value === 'number' ? Math.round(value * 100) : 0;
+        const numVal = value !== null && value !== undefined ? Number(value) : null;
+        const pct = numVal !== null && !isNaN(numVal) ? Math.round(numVal * 100) : null;
+        if (pct === null) {
+          return <span className="text-sm text-slate-400 italic">N/A</span>;
+        }
         return (
           <div className="flex items-center space-x-3">
             <div className="w-24 bg-slate-100 rounded-full h-2 flex-shrink-0">
