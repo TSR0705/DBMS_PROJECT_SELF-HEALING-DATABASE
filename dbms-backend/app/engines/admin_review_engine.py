@@ -371,13 +371,9 @@ class AdminReviewEngine:
         """
         
         try:
-            # Use a separate connection with write permissions for review logging
-            config = self.db.config.copy()
-            
-            import mysql.connector
-            with mysql.connector.connect(**config) as conn:
+            # Use the pooled connection for recording admin reviews
+            with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                
                 cursor.execute(insert_query, (
                     review['review_id'],
                     review['decision_id'],
@@ -386,7 +382,6 @@ class AdminReviewEngine:
                     review['override_flag'],
                     review['reviewed_at']
                 ))
-                
                 conn.commit()
                 cursor.close()
                 
@@ -509,12 +504,9 @@ class AdminReviewEngine:
         """
         
         try:
-            config = self.db.config.copy()
-            
-            import mysql.connector
-            with mysql.connector.connect(**config) as conn:
+            # Use the pooled connection for simulating admin action
+            with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                
                 cursor.execute(update_query, (
                     action,
                     comment,
@@ -522,7 +514,6 @@ class AdminReviewEngine:
                     datetime.now(),
                     review_id
                 ))
-                
                 conn.commit()
                 cursor.close()
                 
