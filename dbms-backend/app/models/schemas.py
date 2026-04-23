@@ -36,11 +36,11 @@ class AIAnalysis(BaseModel):
     predicted_issue_class: str = Field(..., description="AI-predicted classification of the issue")
     severity_level: str = Field(..., description="Assessed severity level (Critical, High, Medium, Low)")
     risk_type: str = Field(..., description="Type of risk identified")
-    confidence_score: float = Field(0.0, description="AI confidence score (0.0 to 1.0)")
+    confidence_score: Optional[float] = Field(None, description="AI confidence score (0.0 to 1.0)")
     model_version: str = Field(..., description="Version of AI model used")
     analyzed_at: datetime = Field(default_factory=datetime.now, description="Timestamp when analysis was completed")
-    baseline_metric: float = Field(0.0, description="Baseline metric for comparison")
-    severity_ratio: float = Field(0.0, description="Calculated severity ratio")
+    baseline_metric: Optional[float] = Field(None, description="Baseline metric for comparison — null when DB value is absent")
+    severity_ratio: Optional[float] = Field(None, description="Calculated severity ratio — null when DB value is absent")
     
     class Config:
         json_encoders = {
