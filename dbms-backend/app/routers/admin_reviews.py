@@ -3,8 +3,9 @@ Admin Reviews API router for DBMS self-healing pipeline.
 Provides access to manage and query admin review records.
 """
 
-from fastapi import APIRouter, HTTPException, Path, Query
+from fastapi import APIRouter, HTTPException, Path, Query, Header, status
 from typing import List, Optional
+import os
 import logging
 
 from ..database.connection import db
@@ -12,6 +13,19 @@ from ..models.schemas import AdminReview
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin-reviews", tags=["Admin Reviews"])
+
+# Simple Admin Auth Dependency
+async def verify_admin_auth(x_admin_token: Optional[str] = Header(None)):
+    """Simple authorization check for ADMIN role."""
+    # Fallback to a default secret if API_KEY is not set in env
+    expected_token = os.getenv("API_KEY", "admin-secret-token")
+    if not x_admin_token or x_admin_token != expected_token:
+        logger.warning(f"Unauthorized access attempt with token: {x_admin_token}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="ADMIN authorization required"
+        )
+    return True
 
 @router.get("/", response_model=List[AdminReview])
 async def get_all_admin_reviews(
@@ -183,58 +197,100 @@ async def get_reviews_by_decision(
 
 @router.post("/{review_id}/approve")
 async def approve_review(
-    review_id: str = Path(..., description="Review ID to approve")
+    review_id: str = Path(..., description="Review ID to approve"),
+    x_admin_token: Optional[str] = Header(None)
 ):
     """
     Approve an admin review and trigger the associated healing action.
+    This endpoint is idempotent and secure.
     """
+    # STEP 1: Verify Authorization
+    await verify_admin_auth(x_admin_token)
+    
     try:
-        # We need the decision_id for the procedure call
-        # Since the procedure takes p_decision_id
-        check_query = "SELECT decision_id FROM admin_reviews WHERE review_id = %s"
+        # STEP 2 & 3: State Validation and Idempotency
+        check_query = "SELECT decision_id, review_status FROM admin_reviews WHERE review_id = %s"
         result = db.execute_read_query(check_query, (review_id,))
         
         if not result:
-            raise HTTPException(status_code=404, detail="Review not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Review not found")
             
+        current_status = result[0]['review_status']
         decision_id = result[0]['decision_id']
         
-        # Call the stored procedure
+        if current_status != 'PENDING':
+            logger.info(f"Review {review_id} already processed (Status: {current_status}). Skipping execution.")
+            return {
+                "status": "ALREADY_PROCESSED", 
+                "message": f"Review {review_id} has already been {current_status.lower()}.",
+                "review_id": review_id,
+                "state": current_status
+            }
+        
+        # STEP 4: Trigger Execution
+        logger.info(f"Processing approval for review {review_id} (Decision {decision_id})")
         db.execute_write_query("CALL process_admin_review(%s, 'APPROVE')", (decision_id,))
         
-        logger.info(f"Successfully approved review {review_id} (Decision {decision_id})")
-        return {"status": "success", "message": f"Review {review_id} approved and healing triggered."}
+        return {
+            "status": "SUCCESS", 
+            "message": f"Review {review_id} approved and healing triggered."
+        }
         
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Failed to approve review {review_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Execution failure: {str(e)}"
+        )
 
 @router.post("/{review_id}/reject")
 async def reject_review(
-    review_id: str = Path(..., description="Review ID to reject")
+    review_id: str = Path(..., description="Review ID to reject"),
+    x_admin_token: Optional[str] = Header(None)
 ):
     """
     Reject an admin review and close the issue without healing.
+    This endpoint is idempotent and secure.
     """
+    # STEP 1: Verify Authorization
+    await verify_admin_auth(x_admin_token)
+    
     try:
-        check_query = "SELECT decision_id FROM admin_reviews WHERE review_id = %s"
+        # STEP 2 & 3: State Validation and Idempotency
+        check_query = "SELECT decision_id, review_status FROM admin_reviews WHERE review_id = %s"
         result = db.execute_read_query(check_query, (review_id,))
         
         if not result:
-            raise HTTPException(status_code=404, detail="Review not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Review not found")
             
+        current_status = result[0]['review_status']
         decision_id = result[0]['decision_id']
         
-        # Call the stored procedure
+        if current_status != 'PENDING':
+            logger.info(f"Review {review_id} already processed (Status: {current_status}). Skipping rejection.")
+            return {
+                "status": "ALREADY_PROCESSED", 
+                "message": f"Review {review_id} has already been {current_status.lower()}.",
+                "review_id": review_id,
+                "state": current_status
+            }
+        
+        # STEP 4: Trigger Execution
+        logger.info(f"Processing rejection for review {review_id} (Decision {decision_id})")
         db.execute_write_query("CALL process_admin_review(%s, 'REJECT')", (decision_id,))
         
-        logger.info(f"Successfully rejected review {review_id} (Decision {decision_id})")
-        return {"status": "success", "message": f"Review {review_id} rejected."}
+        return {
+            "status": "SUCCESS", 
+            "message": f"Review {review_id} rejected."
+        }
         
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Failed to reject review {review_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Execution failure: {str(e)}"
+        )
