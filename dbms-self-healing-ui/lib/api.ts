@@ -254,7 +254,6 @@ class ApiClient {
         // STEP 7: Stop retrying on 400 (Bad Request) and 403 (Forbidden)
         if (error.status === 400 || error.status === 403) {
           console.error(`Stopping retry loop due to client error: ${error.status}`);
-          this.reset();
           throw error;
         }
 
