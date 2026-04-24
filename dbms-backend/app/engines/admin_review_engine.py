@@ -364,7 +364,7 @@ class AdminReviewEngine:
             True if successful, False otherwise
         """
         insert_query = """
-        INSERT INTO admin_reviews (
+        INSERT IGNORE INTO admin_reviews (
             review_id, decision_id, admin_action, admin_comment,
             override_flag, reviewed_at
         ) VALUES (%s, %s, %s, %s, %s, %s)
