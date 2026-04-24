@@ -75,7 +75,7 @@ proc_label: BEGIN
             execution_status, verification_status, process_id,
             before_metric, after_metric, error_message
         ) VALUES (
-            p_decision_id, v_action_type, 'AUTOMATIC', 'SYSTEM_V2',
+            p_decision_id, v_action_type, 'AUTOMATIC', 'SYSTEM',
             v_exec_status, v_verification, v_process_id,
             v_before_metric, v_after_metric, v_error_msg
         );
@@ -359,7 +359,7 @@ proc_label: BEGIN
         p_decision_id,
         v_action_type,
         'AUTOMATIC',
-        'SYSTEM_V2',
+        'SYSTEM',
         v_exec_status,
         v_verification,
         v_process_id,
