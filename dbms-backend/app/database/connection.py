@@ -94,7 +94,7 @@ class DatabaseConnection:
         Execute a write SQL query and return rows affected.
         """
         # Centralized safety check for writes
-        SafetyGuards.validate_sql_query(query, allowed_operations=['INSERT', 'UPDATE'])
+        SafetyGuards.validate_sql_query(query, allowed_operations=['INSERT', 'UPDATE', 'CALL'])
         
         conn = self._get_conn()
         try:
