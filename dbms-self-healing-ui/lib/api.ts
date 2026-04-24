@@ -229,6 +229,7 @@ class ApiClient {
           method: options.method || 'GET',
           headers: {
             'Content-Type': 'application/json',
+            'X-Admin-Token': process.env.NEXT_PUBLIC_ADMIN_TOKEN || 'your-api-key-change-in-production-use-strong-random-key',
             ...(options.headers || {}),
           },
           body: options.body,
@@ -239,13 +240,24 @@ class ApiClient {
         clearTimeout(timeoutId);
 
         if (!response.ok) {
-          throw new Error(
-            `API request failed: ${response.status} ${response.statusText}`
-          );
+          // Explicitly handle 400, 403 and other client errors
+          const errorData = await response.json().catch(() => ({}));
+          const errorMessage = errorData.detail || response.statusText;
+          
+          const error: any = new Error(`API request failed: ${response.status} ${errorMessage}`);
+          error.status = response.status;
+          throw error;
         }
 
         return response.json();
-      } catch (error) {
+      } catch (error: any) {
+        // STEP 7: Stop retrying on 400 (Bad Request) and 403 (Forbidden)
+        if (error.status === 400 || error.status === 403) {
+          console.error(`Stopping retry loop due to client error: ${error.status}`);
+          this.reset();
+          throw error;
+        }
+
         // Enhanced error handling
         if (error instanceof Error) {
           if (error.name === 'AbortError') {
