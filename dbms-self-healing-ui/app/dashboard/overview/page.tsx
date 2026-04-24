@@ -30,9 +30,11 @@ export default function SystemOverview() {
   const { systemMetrics, recentReviews, recentLearning, recentEvents } = data;
 
   const handleApprove = async (reviewId: string) => {
+    if (processingId) return;
     setProcessingId(reviewId);
     try {
       await apiClient.approveReview(reviewId);
+      // Wait for refresh before clearing processingId to prevent double-clicks during reload
       await realtimeService.refreshData();
     } catch (err) {
       console.error('Failed to approve:', err);
@@ -42,6 +44,7 @@ export default function SystemOverview() {
   };
 
   const handleReject = async (reviewId: string) => {
+    if (processingId) return;
     setProcessingId(reviewId);
     try {
       await apiClient.rejectReview(reviewId);
