@@ -4,24 +4,10 @@ SET collation_connection = 'utf8mb4_unicode_ci';
 -- ============================================================
 -- PHASE 1: REAL EXECUTION WITH VERIFICATION
 -- ============================================================
--- This file EXTENDS the existing execution engine to support:
--- 1. Real SQL execution (KILL_CONNECTION, ROLLBACK)
--- 2. Pre/post metric verification
--- 3. Real learning from verified outcomes
--- 
--- BACKWARD COMPATIBLE: All existing logic preserved
+-- Columns before_metric, after_metric, verification_status,
+-- process_id, error_message are defined in the base schema
+-- (dbms_self_healing.sql). No ALTER TABLE needed here.
 -- ============================================================
-
--- ============================================================
--- STEP 1: ENHANCED healing_actions TABLE
--- Add columns for verification metrics (backward compatible)
--- ============================================================
-ALTER TABLE healing_actions 
-ADD COLUMN IF NOT EXISTS before_metric DECIMAL(15,6) NULL COMMENT 'Metric value before execution',
-ADD COLUMN IF NOT EXISTS after_metric DECIMAL(15,6) NULL COMMENT 'Metric value after execution',
-ADD COLUMN IF NOT EXISTS verification_status VARCHAR(20) NULL COMMENT 'VERIFIED/UNVERIFIED/FAILED',
-ADD COLUMN IF NOT EXISTS process_id BIGINT NULL COMMENT 'Process ID for KILL_CONNECTION',
-ADD COLUMN IF NOT EXISTS error_message TEXT NULL COMMENT 'Error details if execution failed';
 
 -- ============================================================
 -- STEP 2: ENHANCED EXECUTION ENGINE
