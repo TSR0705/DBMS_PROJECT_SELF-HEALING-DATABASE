@@ -1,5 +1,78 @@
 USE dbms_self_healing;
 
+-- ============================================================
+-- ENHANCED healing_actions TABLE - MySQL 5.7+ Compatible
+-- Add columns for verification metrics (backward compatible)
+-- ============================================================
+
+-- Check and add columns individually with error handling
+-- This approach works with MySQL 5.7+ and avoids IF NOT EXISTS syntax issues
+
+-- Add before_metric column
+SET @sql = (SELECT IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+     WHERE table_name = 'healing_actions' 
+     AND table_schema = DATABASE() 
+     AND column_name = 'before_metric') > 0,
+    'SELECT ''Column before_metric already exists'' AS msg',
+    'ALTER TABLE healing_actions ADD COLUMN before_metric DECIMAL(15,6) NULL COMMENT ''Metric value before execution'''
+));
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Add after_metric column
+SET @sql = (SELECT IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+     WHERE table_name = 'healing_actions' 
+     AND table_schema = DATABASE() 
+     AND column_name = 'after_metric') > 0,
+    'SELECT ''Column after_metric already exists'' AS msg',
+    'ALTER TABLE healing_actions ADD COLUMN after_metric DECIMAL(15,6) NULL COMMENT ''Metric value after execution'''
+));
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Add verification_status column
+SET @sql = (SELECT IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+     WHERE table_name = 'healing_actions' 
+     AND table_schema = DATABASE() 
+     AND column_name = 'verification_status') > 0,
+    'SELECT ''Column verification_status already exists'' AS msg',
+    'ALTER TABLE healing_actions ADD COLUMN verification_status VARCHAR(20) NULL COMMENT ''VERIFIED/UNVERIFIED/FAILED'''
+));
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Add process_id column
+SET @sql = (SELECT IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+     WHERE table_name = 'healing_actions' 
+     AND table_schema = DATABASE() 
+     AND column_name = 'process_id') > 0,
+    'SELECT ''Column process_id already exists'' AS msg',
+    'ALTER TABLE healing_actions ADD COLUMN process_id BIGINT NULL COMMENT ''Process ID for KILL_CONNECTION'''
+));
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Add error_message column
+SET @sql = (SELECT IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+     WHERE table_name = 'healing_actions' 
+     AND table_schema = DATABASE() 
+     AND column_name = 'error_message') > 0,
+    'SELECT ''Column error_message already exists'' AS msg',
+    'ALTER TABLE healing_actions ADD COLUMN error_message TEXT NULL COMMENT ''Error details if execution failed'''
+));
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
 DELIMITER //
 
 DROP PROCEDURE IF EXISTS execute_healing_action_v2//
@@ -185,36 +258,43 @@ proc_label: BEGIN
     END IF;
 
     -- PHASE 7: POST-EXECUTION VERIFICATION
-    DO SLEEP(2); -- Allow time for changes to take effect
-    
-    IF v_action_type = 'KILL_CONNECTION' THEN
-        SELECT COUNT(*) INTO v_after_metric
-        FROM information_schema.processlist
-        WHERE command != 'Sleep' AND time > 1;  -- Reduced to 1 second
+    -- Only verify if execution actually ran
+    IF v_can_execute = TRUE THEN
+        DO SLEEP(2); -- Allow time for changes to take effect
         
-        INSERT INTO debug_log(step, message)
-        VALUES ('exec_after_metric', CONCAT('After metric: ', v_after_metric, ' active connections'));
-        
-    ELSEIF v_action_type = 'ROLLBACK_TRANSACTION' THEN
-        SELECT COUNT(*) INTO v_after_metric
-        FROM information_schema.innodb_trx;
-    END IF;
+        IF v_action_type = 'KILL_CONNECTION' THEN
+            SELECT COUNT(*) INTO v_after_metric
+            FROM information_schema.processlist
+            WHERE command != 'Sleep' AND time > 1;  -- Reduced to 1 second
+            
+            INSERT INTO debug_log(step, message)
+            VALUES ('exec_after_metric', CONCAT('After metric: ', v_after_metric, ' active connections'));
+            
+        ELSEIF v_action_type = 'ROLLBACK_TRANSACTION' THEN
+            SELECT COUNT(*) INTO v_after_metric
+            FROM information_schema.innodb_trx;
+        END IF;
 
-    -- PHASE 8: VERIFICATION LOGIC
-    IF v_before_metric IS NOT NULL AND v_after_metric IS NOT NULL THEN
-        IF v_after_metric < v_before_metric THEN
-            SET v_verification = 'VERIFIED';
-            INSERT INTO debug_log(step, message)
-            VALUES ('verification_success', CONCAT('Metric improved: ', v_before_metric, ' -> ', v_after_metric));
+        -- PHASE 8: VERIFICATION LOGIC
+        IF v_before_metric IS NOT NULL AND v_after_metric IS NOT NULL THEN
+            IF v_after_metric < v_before_metric THEN
+                SET v_verification = 'VERIFIED';
+                INSERT INTO debug_log(step, message)
+                VALUES ('verification_success', CONCAT('Metric improved: ', v_before_metric, ' -> ', v_after_metric));
+            ELSE
+                SET v_verification = 'FAILED';
+                SET v_exec_status = 'FAILED';
+                SET v_error_msg = CONCAT('No improvement: ', v_before_metric, ' -> ', v_after_metric);
+                INSERT INTO debug_log(step, message)
+                VALUES ('verification_failed', v_error_msg);
+            END IF;
         ELSE
-            SET v_verification = 'FAILED';
-            SET v_exec_status = 'FAILED';
-            SET v_error_msg = CONCAT('No improvement: ', v_before_metric, ' -> ', v_after_metric);
-            INSERT INTO debug_log(step, message)
-            VALUES ('verification_failed', v_error_msg);
+            SET v_verification = 'UNVERIFIED';
         END IF;
     ELSE
-        SET v_verification = 'UNVERIFIED';
+        -- Execution was skipped, verification already set to FAILED
+        INSERT INTO debug_log(step, message)
+        VALUES ('verification_skipped', 'Verification skipped - execution did not run');
     END IF;
 
     -- PHASE 9: RECORD RESULTS
