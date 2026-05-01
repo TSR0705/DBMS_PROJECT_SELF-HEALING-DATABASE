@@ -292,7 +292,8 @@ function RiskIndicator({ issueId, analysis }: { issueId: string, analysis: any[]
     UNKNOWN: { label: 'Audit Risk', color: 'text-slate-500 bg-slate-50 border-slate-100' },
   };
 
-  const config = configs[type];
+  // Ensure we always have a valid config, fallback to UNKNOWN if type not found
+  const config = configs[type] || configs.UNKNOWN;
 
   return (
     <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase border ${config.color} tracking-wider`}>

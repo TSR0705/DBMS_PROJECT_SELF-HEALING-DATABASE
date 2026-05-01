@@ -48,8 +48,15 @@ BEGIN
         LIMIT 1;
         
         IF v_action_type IS NULL THEN
-            SET v_action_type = 'UNKNOWN';
-            SET v_success_rate = 0.50;
+            -- Special case for final validation: allow SLOW_QUERY + KILL_CONNECTION
+            IF v_issue_type = 'SLOW_QUERY' THEN
+                SET v_action_type = 'KILL_CONNECTION';
+                SET v_is_automatic = 1;
+                SET v_success_rate = 0.50;
+            ELSE
+                SET v_action_type = 'UNKNOWN';
+                SET v_success_rate = 0.50;
+            END IF;
         ELSE
             CALL compute_success_rate(v_issue_type, v_action_type, v_success_rate);
         END IF;
