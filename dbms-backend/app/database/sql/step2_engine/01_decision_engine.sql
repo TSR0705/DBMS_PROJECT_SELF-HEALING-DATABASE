@@ -24,16 +24,15 @@ proc_label: BEGIN
 
     IF v_issue_type IS NULL THEN LEAVE proc_label; END IF;
 
-    -- [2] Calculate Priority Score (AI Only for ranking)
+    -- [2] Calculate Priority Score
     CASE v_severity_level
         WHEN 'CRITICAL' THEN SET v_severity_weight = 1.0;
         WHEN 'HIGH'     THEN SET v_severity_weight = 0.7;
         ELSE                 SET v_severity_weight = 0.4;
     END CASE;
-    
     SET v_priority_score = (v_severity_weight * 0.6) + (LEAST(v_confidence_score, 1.0) * 0.4);
 
-    -- [3] High-Precision Authority Validation (Source of Truth)
+    -- [3] Authority Validation
     CALL validate_issue_state(p_issue_id, v_issue_exists);
 
     -- [4] Decision Routing
@@ -45,7 +44,7 @@ proc_label: BEGIN
         SET v_decision_reason = CONCAT('ADMIN_REVIEW: DB state clean, AI prediction ignored (Priority: ', ROUND(v_priority_score, 2), ')');
     END IF;
 
-    -- [5] Record Decision and Push to Reliable Queue
+    -- [5] Record Decision and Escalate
     SELECT COUNT(*) INTO v_exists FROM decision_log WHERE issue_id = p_issue_id;
     IF v_exists = 0 THEN
         INSERT INTO decision_log (issue_id, decision_type, decision_reason, confidence_at_decision)
@@ -55,8 +54,11 @@ proc_label: BEGIN
 
         IF v_decision_type = 'AUTO_HEAL' THEN
             INSERT INTO execution_queue (decision_id, priority_score, status)
-            VALUES (@last_decision_id, v_priority_score, 'PENDING')
-            ON DUPLICATE KEY UPDATE status = 'PENDING', retry_count = 0;
+            VALUES (@last_decision_id, v_priority_score, 'PENDING');
+        ELSE
+            -- [AUDIT FIX] Escalate to admin_reviews table for UI visibility
+            INSERT INTO admin_reviews (decision_id, status, requested_at)
+            VALUES (@last_decision_id, 'PENDING', NOW());
         END IF;
     END IF;
 END //
