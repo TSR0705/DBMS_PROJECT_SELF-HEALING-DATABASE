@@ -7,14 +7,14 @@ export const DASHBOARD_CONFIG = {
   // Polling intervals
   REFRESH_INTERVAL_MS: 3000,
   
-  // Data display limits - Extended for better visibility
+  // Data display limits - Optimized for performance and visibility
   LIMITS: {
-    RECENT_ISSUES: 100,      // Increased from 10 to 100
-    RECENT_ANALYSIS: 100,    // Increased from 10 to 100
-    RECENT_DECISIONS: 100,   // Increased from 10 to 100
-    RECENT_LEARNING: 100,    // Increased from 10 to 100
-    RECENT_REVIEWS: 100,     // Increased from 50 to 100
-    RECENT_EVENTS: 100,      // Increased from 10 to 100
+    RECENT_ISSUES: 50,       // Balanced: enough history without overwhelming UI
+    RECENT_ANALYSIS: 50,     // Balanced: sufficient for analysis trends
+    RECENT_DECISIONS: 50,    // Balanced: good decision history visibility
+    RECENT_LEARNING: 30,     // Lower: learning records are less frequently accessed
+    RECENT_REVIEWS: 100,     // Higher: admins need to see all pending reviews
+    RECENT_EVENTS: 50,       // Balanced: good pipeline visibility
   },
   
   // API settings
