@@ -29,27 +29,23 @@ async def get_healing_actions(
         d.decision_id,
         di.issue_type,
         d.decision_type,
-        q.status AS queue_status,
         h.action_id,
         h.action_type,
         h.execution_mode,
         h.executed_by,
         h.execution_status,
         h.verification_status,
-        q.created_at AS queued_at,
         h.executed_at,
         CASE
-            WHEN q.status = 'PENDING' THEN 'QUEUED'
-            WHEN q.status = 'PROCESSING' THEN 'RUNNING'
-            WHEN d.decision_type = 'ADMIN_REVIEW' AND h.execution_status IS NULL THEN 'QUEUED'
-            WHEN h.execution_status = 'SUCCESS' THEN 'COMPLETED'
+            WHEN d.decision_type = 'ADMIN_REVIEW' AND h.execution_status IS NULL THEN 'PENDING'
+            WHEN h.execution_status = 'SUCCESS' THEN 'SUCCESS'
             WHEN h.execution_status = 'FAILED' THEN 'FAILED'
             WHEN h.execution_status = 'SKIPPED' THEN 'SKIPPED'
+            WHEN h.execution_status IS NULL THEN 'PENDING'
             ELSE 'UNKNOWN'
         END AS system_status
     FROM decision_log d
     JOIN detected_issues di ON d.issue_id = di.issue_id
-    LEFT JOIN execution_queue q ON d.decision_id = q.decision_id
     LEFT JOIN healing_actions h ON d.decision_id = h.decision_id
     WHERE 1=1
     """
@@ -59,7 +55,7 @@ async def get_healing_actions(
         query += " HAVING system_status = %s"
         params.append(status)
     
-    query += " ORDER BY d.decision_id DESC LIMIT %s"
+    query += " ORDER BY d.decided_at DESC LIMIT %s"
     params.append(limit)
     
     try:
@@ -76,10 +72,11 @@ async def get_healing_actions(
                 action_type=row['action_type'],
                 execution_mode=row['execution_mode'],
                 executed_by=row['executed_by'],
-                queue_status=row['queue_status'],
+                queue_status=None,  # No execution_queue table
                 execution_status=row['execution_status'],
+                verification_status=row['verification_status'],
                 system_status=row['system_status'],
-                queued_at=row['queued_at'],
+                queued_at=None,  # No execution_queue table
                 executed_at=row['executed_at']
             )
             actions.append(action)
@@ -104,15 +101,26 @@ async def get_healing_action(
     """
     query = """
     SELECT 
-        action_id,
-        decision_id,
-        action_type,
-        execution_mode,
-        executed_by,
-        execution_status,
-        executed_at
-    FROM healing_actions 
-    WHERE action_id = %s
+        h.action_id,
+        h.decision_id,
+        h.action_type,
+        h.execution_mode,
+        h.executed_by,
+        h.execution_status,
+        h.verification_status,
+        h.executed_at,
+        d.decision_type,
+        di.issue_type,
+        CASE
+            WHEN h.execution_status = 'SUCCESS' THEN 'SUCCESS'
+            WHEN h.execution_status = 'FAILED' THEN 'FAILED'
+            WHEN h.execution_status = 'SKIPPED' THEN 'SKIPPED'
+            ELSE 'PENDING'
+        END AS system_status
+    FROM healing_actions h
+    JOIN decision_log d ON h.decision_id = d.decision_id
+    JOIN detected_issues di ON d.issue_id = di.issue_id
+    WHERE h.action_id = %s
     """
     
     try:
@@ -124,15 +132,22 @@ async def get_healing_action(
                 detail=f"No healing action found with ID {action_id}"
             )
         
+        row = results[0]
         logger.info(f"Retrieved healing action {action_id}")
         return HealingAction(
-            action_id=str(results[0]['action_id']),
-            decision_id=str(results[0]['decision_id']),
-            action_type=results[0]['action_type'],
-            execution_mode=results[0]['execution_mode'],
-            executed_by=results[0]['executed_by'],
-            execution_status=results[0]['execution_status'],
-            executed_at=results[0]['executed_at']
+            action_id=str(row['action_id']),
+            decision_id=str(row['decision_id']),
+            issue_type=row['issue_type'],
+            decision_type=row['decision_type'],
+            action_type=row['action_type'],
+            execution_mode=row['execution_mode'],
+            executed_by=row['executed_by'],
+            queue_status=None,
+            execution_status=row['execution_status'],
+            verification_status=row['verification_status'],
+            system_status=row['system_status'],
+            queued_at=None,
+            executed_at=row['executed_at']
         )
         
     except HTTPException:
