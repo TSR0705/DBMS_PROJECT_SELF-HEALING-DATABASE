@@ -1,3 +1,17 @@
+# ⚠️ DEPRECATED - The Self-Healing Engine (Phase 1 Logic)
+
+> **This document contains OUTDATED Phase 1 logic and has been superseded by [Healing_Engine_Design.md](../Healing_Engine_Design.md)**  
+> **Last Updated:** Phase 1 (Legacy)  
+> **Status:** Archived - Contains incorrect information about current system behavior  
+> **Use Instead:** [docs/Healing_Engine_Design.md](../Healing_Engine_Design.md) for Phase 7 architecture  
+> 
+> **⚠️ IMPORTANT CHANGES:**
+> - SLOW_QUERY now routes to AUTO_HEAL (not ADMIN_REVIEW as stated below)
+> - Confidence thresholds have been replaced with validation-based routing
+> - Decision logic now uses stored procedures, not confidence scores
+
+---
+
 # The Self-Healing Engine
 
 At the core of this project is a Dual-Engine Self-Healing module that detects database anomalies and decides if the system should automatically heal the issue, or if the issue requires advanced manual Admin Review.

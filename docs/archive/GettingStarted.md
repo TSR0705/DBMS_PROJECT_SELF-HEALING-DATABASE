@@ -1,3 +1,12 @@
+# ⚠️ DEPRECATED - Getting Started Guide
+
+> **This document has been superseded by [Setup_Guide.md](../Setup_Guide.md)**  
+> **Last Updated:** Legacy  
+> **Status:** Archived for historical reference only  
+> **Use Instead:** [docs/Setup_Guide.md](../Setup_Guide.md) for current, detailed setup instructions
+
+---
+
 # Getting Started Guide
 
 Follow this guide to spin up the local development environment for the Self Healing Database Interface.
