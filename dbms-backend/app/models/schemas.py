@@ -3,7 +3,7 @@ Pydantic models for DBMS self-healing pipeline API responses.
 Defines strict type validation for all API endpoints.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 from typing import Optional, List, Any
 from decimal import Decimal
@@ -20,11 +20,6 @@ class DetectedIssue(BaseModel):
     raw_metric_unit: Optional[str] = Field(None, description="Unit of the raw metric value")
     detected_at: datetime = Field(..., description="Timestamp when issue was first detected")
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-            Decimal: lambda v: float(v) if v is not None else None
-        }
 
 class AIAnalysis(BaseModel):
     """
@@ -42,11 +37,6 @@ class AIAnalysis(BaseModel):
     baseline_metric: Optional[float] = Field(None, description="Baseline metric for comparison — null when DB value is absent")
     severity_ratio: Optional[float] = Field(None, description="Calculated severity ratio — null when DB value is absent")
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-            Decimal: lambda v: float(v)
-        }
 
 class DecisionLog(BaseModel):
     """
@@ -60,29 +50,26 @@ class DecisionLog(BaseModel):
     confidence_at_decision: Decimal = Field(..., description="Confidence level at decision time")
     decided_at: datetime = Field(..., description="Timestamp when decision was made")
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-            Decimal: lambda v: float(v)
-        }
 
 class HealingAction(BaseModel):
     """
     Represents healing actions taken by the system.
-    Maps to healing_actions table structure.
+    Unified view combining decision, queue, and execution state.
     """
-    action_id: str = Field(..., description="Unique identifier for the healing action")
+    action_id: Optional[str] = Field(None, description="Unique identifier for the healing action")
     decision_id: str = Field(..., description="Reference to the related decision")
-    action_type: str = Field(..., description="Type of healing action performed")
-    execution_mode: str = Field(..., description="Mode of execution (AUTOMATIC/MANUAL)")
-    executed_by: str = Field(..., description="Who/what executed the action")
-    execution_status: str = Field(..., description="Current status of action execution")
-    executed_at: datetime = Field(..., description="Timestamp when action was executed")
+    issue_type: Optional[str] = Field(None, description="Type of issue being resolved")
+    decision_type: Optional[str] = Field(None, description="Type of decision made")
+    action_type: Optional[str] = Field(None, description="Type of healing action performed")
+    execution_mode: Optional[str] = Field(None, description="Mode of execution (AUTOMATIC/MANUAL)")
+    executed_by: Optional[str] = Field(None, description="Who/what executed the action")
+    queue_status: Optional[str] = Field(None, description="Status in the execution queue")
+    execution_status: Optional[str] = Field(None, description="Current status of action execution")
+    verification_status: Optional[str] = Field(None, description="Verification status after execution")
+    system_status: str = Field(..., description="Computed unified system status")
+    queued_at: Optional[datetime] = Field(None, description="Timestamp when task was queued")
+    executed_at: Optional[datetime] = Field(None, description="Timestamp when action was executed")
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
 
 class AdminReview(BaseModel):
     """
@@ -100,10 +87,6 @@ class AdminReview(BaseModel):
     override_flag: bool = Field(False, description="Whether admin overrode the decision")
     reviewed_at: datetime = Field(..., description="Timestamp of review")
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
 
 class LearningHistory(BaseModel):
     """
@@ -119,11 +102,6 @@ class LearningHistory(BaseModel):
     confidence_after: Decimal = Field(..., description="Confidence after action")
     recorded_at: datetime = Field(..., description="Timestamp of learning record")
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-            Decimal: lambda v: float(v)
-        }
 
 # Legacy models for backward compatibility
 class IssueAnalysis(BaseModel):
@@ -136,11 +114,6 @@ class IssueAnalysis(BaseModel):
     confidence_score: Decimal = Field(..., description="AI confidence score (0.0 to 1.0)")
     analyzed_at: datetime = Field(..., description="Timestamp when analysis was completed")
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-            Decimal: lambda v: float(v)
-        }
 
 class IssueDecision(BaseModel):
     """
@@ -151,10 +124,6 @@ class IssueDecision(BaseModel):
     decision_reason: str = Field(..., description="Rationale behind the decision")
     decided_at: datetime = Field(..., description="Timestamp when decision was made")
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
 
 class APIResponse(BaseModel):
     """
@@ -171,8 +140,3 @@ class HealthCheck(BaseModel):
     status: str = Field(..., description="API health status")
     database_connected: bool = Field(..., description="Database connectivity status")
     timestamp: datetime = Field(..., description="Health check timestamp")
-    
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }

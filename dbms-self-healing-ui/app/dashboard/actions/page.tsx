@@ -28,14 +28,14 @@ export default function HealingActionsPage() {
 
   const { recentActions, systemMetrics } = data;
 
-  // Calculate real stats from data
+  // Calculate real stats from data using execution_status
   const successfulCount = recentActions.filter(
     a => a.execution_status === 'SUCCESS'
   ).length;
   const failedCount = recentActions.filter(
     a => a.execution_status === 'FAILED'
   ).length;
-  const pendingCount = recentActions.filter(
+  const inProgressCount = recentActions.filter(
     a => a.execution_status === 'PENDING'
   ).length;
 
@@ -43,7 +43,7 @@ export default function HealingActionsPage() {
     totalActions: recentActions.length,
     successful: successfulCount,
     failed: failedCount,
-    pending: pendingCount,
+    pending: inProgressCount,
   };
 
   const columns: DataTableColumn<HealingAction>[] = [
@@ -53,7 +53,7 @@ export default function HealingActionsPage() {
       className: 'w-20',
       render: value => (
         <span className="font-mono text-xs bg-slate-100 px-2 py-1 rounded">
-          #{value}
+          {value ? `#${value}` : 'N/A'}
         </span>
       ),
     },
@@ -71,7 +71,7 @@ export default function HealingActionsPage() {
       className: 'w-48',
       render: value => (
         <span className="font-semibold text-sm text-slate-800 tracking-tight">
-          {String(value).replace(/_/g, ' ')}
+          {value ? String(value).replace(/_/g, ' ') : 'Pending...'}
         </span>
       ),
     },
@@ -84,10 +84,12 @@ export default function HealingActionsPage() {
           className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border shadow-sm tracking-tight ${
             value === 'AUTOMATIC'
               ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-              : 'bg-amber-50 text-amber-700 border-amber-200'
+              : value === 'MANUAL' 
+                ? 'bg-amber-50 text-amber-700 border-amber-200'
+                : 'bg-slate-50 text-slate-500 border-slate-200'
           }`}
         >
-          {String(value).replace(/_/g, ' ')}
+          {value ? String(value).replace(/_/g, ' ') : 'N/A'}
         </span>
       ),
     },
@@ -97,8 +99,8 @@ export default function HealingActionsPage() {
       className: 'w-32',
       render: value => (
         <span className="text-[11px] font-semibold text-slate-500 uppercase flex items-center">
-          <div className={`w-1.5 h-1.5 rounded-full mr-2 ${value === 'SYSTEM' ? 'bg-blue-400' : 'bg-purple-400'}`}></div>
-          {value}
+          <div className={`w-1.5 h-1.5 rounded-full mr-2 ${value === 'SYSTEM' ? 'bg-blue-400' : value ? 'bg-purple-400' : 'bg-slate-300'}`}></div>
+          {value || 'SYSTEM'}
         </span>
       ),
     },
@@ -106,17 +108,7 @@ export default function HealingActionsPage() {
       key: 'execution_status',
       header: 'Status',
       className: 'w-32',
-      render: value => {
-        const variant =
-          value === 'SUCCESS'
-            ? 'success'
-            : value === 'FAILED'
-              ? 'error'
-              : value === 'PENDING'
-                ? 'warning'
-                : 'default';
-        return <StatusBadge status={value} variant={variant} />;
-      },
+      render: value => <StatusBadge status={value} />,
     },
     {
       key: 'executed_at',
@@ -125,10 +117,10 @@ export default function HealingActionsPage() {
       render: value => (
         <div>
           <div className="text-xs font-semibold text-slate-800">
-            {new Date(value).toLocaleDateString()}
+            {value ? new Date(value).toLocaleDateString() : 'Pending'}
           </div>
           <div className="text-[11px] text-slate-500">
-            {new Date(value).toLocaleTimeString()}
+            {value ? new Date(value).toLocaleTimeString() : '...'}
           </div>
         </div>
       ),
@@ -261,7 +253,7 @@ export default function HealingActionsPage() {
           description="Current status of healing actions"
         >
           <div className="space-y-4">
-            {['SUCCESS', 'FAILED', 'PENDING', 'IN_PROGRESS'].map(status => {
+            {['SUCCESS', 'FAILED', 'PENDING'].map(status => {
               const count = recentActions.filter(
                 a => a.execution_status === status
               ).length;
@@ -322,51 +314,44 @@ export default function HealingActionsPage() {
         description="Latest healing actions executed by the system"
       >
         <div className="space-y-4">
-          {recentActions.slice(0, 5).map(action => (
+          {recentActions.slice(0, 5).map((action, idx) => (
             <div
-              key={action.action_id}
+              key={action.action_id || `pending-${action.decision_id}-${idx}`}
               className="p-6 bg-white border border-slate-200 rounded-xl"
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-3">
                   <span className="font-mono text-sm text-slate-500">
-                    #{action.action_id}
+                    {action.action_id ? `#${action.action_id}` : 'QUEUED'}
                   </span>
-                  <StatusBadge
-                    status={action.execution_status}
-                    variant={
-                      action.execution_status === 'SUCCESS'
-                        ? 'success'
-                        : action.execution_status === 'FAILED'
-                          ? 'error'
-                          : 'warning'
-                    }
-                  />
+                  <StatusBadge status={action.execution_status} />
                   <span
                     className={`text-xs px-2 py-1 rounded-full ${
                       action.execution_mode === 'AUTOMATIC'
                         ? 'bg-green-100 text-green-700'
-                        : 'bg-orange-100 text-orange-700'
+                        : action.execution_mode === 'MANUAL'
+                          ? 'bg-orange-100 text-orange-700'
+                          : 'bg-slate-100 text-slate-700'
                     }`}
                   >
-                    {action.execution_mode}
+                    {action.execution_mode || 'PENDING'}
                   </span>
                 </div>
                 <span className="text-xs text-slate-500">
-                  {new Date(action.executed_at).toLocaleString()}
+                  {action.executed_at ? new Date(action.executed_at).toLocaleString() : 'Waiting for execution...'}
                 </span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                 <div>
                   <span className="text-slate-600">Action Type:</span>
                   <p className="font-semibold text-slate-900">
-                    {action.action_type}
+                    {action.action_type || 'Identifying...'}
                   </p>
                 </div>
                 <div>
                   <span className="text-slate-600">Executed By:</span>
                   <p className="font-semibold text-slate-900">
-                    {action.executed_by}
+                    {action.executed_by || 'SYSTEM'}
                   </p>
                 </div>
                 <div>

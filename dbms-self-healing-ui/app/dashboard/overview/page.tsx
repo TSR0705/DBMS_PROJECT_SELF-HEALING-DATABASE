@@ -289,6 +289,8 @@ function RiskIndicator({ issueId, analysis }: { issueId: string, analysis: any[]
     STATIC: { label: 'Static Risk', color: 'text-slate-600 bg-slate-100 border-slate-200/50' },
     DYNAMIC: { label: 'Dynamic Spike', color: 'text-amber-700 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200/50 shadow-sm' },
     SLA_VIOLATION: { label: 'SLA Risk', color: 'text-red-700 bg-gradient-to-r from-red-50 to-rose-50 border-red-200/50 shadow-sm' },
+    STEADY: { label: 'Steady State', color: 'text-emerald-700 bg-emerald-50 border-emerald-200/50' },
+    SPIKE: { label: 'Metric Spike', color: 'text-orange-700 bg-orange-50 border-orange-200/50' },
     UNKNOWN: { label: 'Audit Risk', color: 'text-slate-500 bg-slate-50 border-slate-100' },
   };
 

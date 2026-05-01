@@ -132,23 +132,21 @@ Unlike traditional DBs, this system executes its core logic within the database 
 
 | Procedure | Purpose |
 | :--- | :--- |
-| `run_auto_heal_pipeline` | The main orchestrator that processes pending issues. |
-| `run_ai_analysis` | Computes statistical baselines (Z-scores) to determine severity. |
-| `make_decision` | Evaluates AI confidence vs Historical Success to choose AUTO vs ADMIN. |
-| `execute_healing_action` | Dispatches the recovery command based on the decision. |
-| `update_learning` | Adjusts confidence scores for future decisions based on results. |
+| `run_auto_heal_pipeline` | The main orchestrator triggered by Event Scheduler (1s interval). |
+| `run_ai_analysis` | Computes statistical baselines (Z-scores) to determine AI confidence. |
+| `make_decision` | Evaluates AI + System Impact to score Priority. Triggers immediate execution if verified. |
+| `execute_healing_action_v2` | Real-world surgical execution engine (Iterative kills, targeted lock release). |
+| `validate_issue_state` | Real-time state validation via `sys.innodb_lock_waits` and processlist normalization. |
 
 ---
 
-## ⚡ SQL Triggers & Automation
+## ⚡ Event-Driven Automation
 
-### `run_automatic_detection`
-Called externally to poll system state (Live Traffic, Locks, Connections) and populate `detected_issues`.
+### `evt_auto_heal_pipeline` (Event Scheduler)
+Runs every **1 second** natively inside MySQL to execute `run_auto_heal_pipeline`. This replaces all legacy SQL triggers with a deterministic, low-latency background polling mechanism. 
 
-### `after_decision_insert`
-A post-analysis trigger that routes the flow:
-- **If AUTO_HEAL**: Immediately invokes `execute_healing_action`.
-- **If ADMIN_REVIEW**: Populates the Admin Control Center for human verification.
+### Immediate Bypass Logic
+Previously handled by `after_decision_insert` triggers, the decision engine (`make_decision`) now directly invokes `execute_healing_action_v2` for `AUTO_HEAL` decisions, entirely bypassing asynchronous queues for real-time responsiveness.
 
 ---
 

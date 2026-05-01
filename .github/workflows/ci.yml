@@ -3,7 +3,7 @@ name: DBMS Project CI Pipeline
 # Trigger CI on every push and pull request for safety and validation
 on:
   push:
-    branches: [ main, develop, feature/* ]
+    branches: [ main, develop, feature/*, feat/* ]
   pull_request:
     branches: [ main, develop ]
 

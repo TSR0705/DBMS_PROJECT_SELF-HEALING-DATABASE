@@ -90,16 +90,7 @@ export default function AdminReviewPage() {
       key: 'review_status',
       header: 'Status',
       className: 'w-36',
-      render: (value) => {
-        const status = String(value || 'PENDING').toUpperCase();
-        const variant =
-          status === 'APPROVED'
-            ? 'success'
-            : status === 'REJECTED'
-              ? 'error'
-              : 'warning';
-        return <StatusBadge status={status} variant={variant} />;
-      },
+      render: (value) => <StatusBadge status={String(value || 'PENDING')} />,
     },
     {
       key: 'admin_comment',
@@ -262,16 +253,7 @@ export default function AdminReviewPage() {
                   className="flex items-center justify-between p-4 bg-slate-50 rounded-xl"
                 >
                   <div className="flex items-center space-x-3">
-                    <StatusBadge
-                      status={action}
-                      variant={
-                        action === 'APPROVED'
-                          ? 'success'
-                          : action === 'REJECTED'
-                            ? 'error'
-                            : 'warning'
-                      }
-                    />
+                    <StatusBadge status={action} />
                     <span className="font-medium">{count} reviews</span>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -312,17 +294,7 @@ export default function AdminReviewPage() {
                     <span className="font-mono text-sm text-slate-500">
                       #{review.review_id}
                     </span>
-                    <StatusBadge
-                      status={review.review_status === 'APPROVED' ? 'APPROVED' : 
-                             review.review_status === 'REJECTED' ? 'REJECTED' : 'PENDING'}
-                      variant={
-                        review.review_status === 'APPROVED'
-                          ? 'success'
-                          : review.review_status === 'REJECTED'
-                            ? 'error'
-                            : 'warning'
-                      }
-                    />
+                    <StatusBadge status={review.review_status || 'PENDING'} />
                     {review.override_flag && (
                       <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">
                         OVERRIDE

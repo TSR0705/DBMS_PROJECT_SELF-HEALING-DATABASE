@@ -16,49 +16,67 @@ router = APIRouter(prefix="/actions", tags=["Healing Actions"])
 @router.get("/", response_model=List[HealingAction])
 async def get_healing_actions(
     limit: int = Query(50, ge=1, le=100, description="Maximum number of actions to return"),
-    status: Optional[str] = Query(None, description="Filter by execution status")
+    status: Optional[str] = Query(None, description="Filter by system status")
 ):
     """
-    Retrieve healing actions from the self-healing system.
+    Retrieve a unified view of healing actions and queue states.
     
-    Returns actions ordered by execution time (most recent first).
-    Supports filtering by execution status and pagination.
+    Returns a combined view of decisions, their queue status, and execution results.
+    Ordered by decision time (most recent first).
     """
     query = """
     SELECT 
-        action_id,
-        decision_id,
-        action_type,
-        execution_mode,
-        executed_by,
-        execution_status,
-        executed_at
-    FROM healing_actions 
-    WHERE executed_at IS NOT NULL
+        d.decision_id,
+        di.issue_type,
+        d.decision_type,
+        h.action_id,
+        h.action_type,
+        h.execution_mode,
+        h.executed_by,
+        h.execution_status,
+        h.verification_status,
+        h.executed_at,
+        CASE
+            WHEN d.decision_type = 'ADMIN_REVIEW' AND h.execution_status IS NULL THEN 'PENDING'
+            WHEN h.execution_status = 'SUCCESS' THEN 'SUCCESS'
+            WHEN h.execution_status = 'FAILED' THEN 'FAILED'
+            WHEN h.execution_status = 'SKIPPED' THEN 'SKIPPED'
+            WHEN h.execution_status IS NULL THEN 'PENDING'
+            ELSE 'UNKNOWN'
+        END AS system_status
+    FROM decision_log d
+    JOIN detected_issues di ON d.issue_id = di.issue_id
+    LEFT JOIN healing_actions h ON d.decision_id = h.decision_id
+    WHERE 1=1
     """
     
     params = []
     if status:
-        query += " AND execution_status = %s"
+        query += " HAVING system_status = %s"
         params.append(status)
     
-    query += " ORDER BY executed_at DESC LIMIT %s"
+    query += " ORDER BY d.decided_at DESC LIMIT %s"
     params.append(limit)
     
     try:
         results = db.execute_read_query(query, tuple(params))
-        logger.info(f"Retrieved {len(results)} healing actions")
+        logger.info(f"Retrieved {len(results)} unified healing actions")
         
-        # Convert results to match Pydantic model
         actions = []
         for row in results:
             action = HealingAction(
-                action_id=str(row['action_id']),
+                action_id=str(row['action_id']) if row['action_id'] else None,
                 decision_id=str(row['decision_id']),
+                issue_type=row['issue_type'],
+                decision_type=row['decision_type'],
                 action_type=row['action_type'],
                 execution_mode=row['execution_mode'],
                 executed_by=row['executed_by'],
+                queue_status=None,  # No execution_queue table
                 execution_status=row['execution_status'],
+                verification_status=row['verification_status'],
+                system_status=row['system_status'],
+                queued_at=None,  # No execution_queue table
                 executed_at=row['executed_at']
             )
             actions.append(action)
@@ -66,10 +84,10 @@ async def get_healing_actions(
         return actions
         
     except Exception as e:
-        logger.error(f"Error retrieving healing actions: {e}")
+        logger.error(f"Error retrieving unified healing actions: {e}")
         raise HTTPException(
             status_code=500, 
-            detail="Failed to retrieve healing actions from database"
+            detail="Failed to retrieve unified actions from database"
         )
 
 @router.get("/{action_id}", response_model=HealingAction)
@@ -83,15 +101,26 @@ async def get_healing_action(
     """
     query = """
     SELECT 
-        action_id,
-        decision_id,
-        action_type,
-        execution_mode,
-        executed_by,
-        execution_status,
-        executed_at
-    FROM healing_actions 
-    WHERE action_id = %s
+        h.action_id,
+        h.decision_id,
+        h.action_type,
+        h.execution_mode,
+        h.executed_by,
+        h.execution_status,
+        h.verification_status,
+        h.executed_at,
+        d.decision_type,
+        di.issue_type,
+        CASE
+            WHEN h.execution_status = 'SUCCESS' THEN 'SUCCESS'
+            WHEN h.execution_status = 'FAILED' THEN 'FAILED'
+            WHEN h.execution_status = 'SKIPPED' THEN 'SKIPPED'
+            ELSE 'PENDING'
+        END AS system_status
+    FROM healing_actions h
+    JOIN decision_log d ON h.decision_id = d.decision_id
+    JOIN detected_issues di ON d.issue_id = di.issue_id
+    WHERE h.action_id = %s
     """
     
     try:
@@ -103,15 +132,22 @@ async def get_healing_action(
                 detail=f"No healing action found with ID {action_id}"
             )
         
+        row = results[0]
         logger.info(f"Retrieved healing action {action_id}")
         return HealingAction(
-            action_id=str(results[0]['action_id']),
-            decision_id=str(results[0]['decision_id']),
-            action_type=results[0]['action_type'],
-            execution_mode=results[0]['execution_mode'],
-            executed_by=results[0]['executed_by'],
-            execution_status=results[0]['execution_status'],
-            executed_at=results[0]['executed_at']
+            action_id=str(row['action_id']),
+            decision_id=str(row['decision_id']),
+            issue_type=row['issue_type'],
+            decision_type=row['decision_type'],
+            action_type=row['action_type'],
+            execution_mode=row['execution_mode'],
+            executed_by=row['executed_by'],
+            queue_status=None,
+            execution_status=row['execution_status'],
+            verification_status=row['verification_status'],
+            system_status=row['system_status'],
+            queued_at=None,
+            executed_at=row['executed_at']
         )
         
     except HTTPException:

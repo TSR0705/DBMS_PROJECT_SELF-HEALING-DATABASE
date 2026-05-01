@@ -5,7 +5,7 @@
 
 export const DASHBOARD_CONFIG = {
   // Polling intervals
-  REFRESH_INTERVAL_MS: 10000,
+  REFRESH_INTERVAL_MS: 3000,
   
   // Data display limits
   LIMITS: {

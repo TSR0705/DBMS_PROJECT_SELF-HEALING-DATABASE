@@ -14,30 +14,35 @@ The following state diagram illustrates the complex transitions an anomaly under
 
 ```mermaid
 stateDiagram-v2
-    [*] --> DETECTED: SQL Trigger / Metric Poll
+    [*] --> DETECTED: Metric Poll / Event Log
     
     state DETECTED {
         direction LR
         RawMetric --> Signature: Unique Hash
-        Signature --> Throttled?: Check Cache
     }
     
-    DETECTED --> ANALYZING: procedure: run_ai_analysis
-    ANALYZING --> DECIDING: procedure: make_decision
+    DETECTED --> ANALYZING: SP: run_ai_analysis
+    ANALYZING --> DECIDING: SP: make_decision
     
     state DECIDING {
         direction LR
-        Score_Low --> PENDING_REVIEW: Confidence < 85%
-        Score_High --> AUTO_HEAL: Confidence >= 85%
+        Valid_Impact --> AUTO_HEAL: Priority High
+        False_Positive --> PENDING_REVIEW: Priority Low
     }
     
     PENDING_REVIEW --> APPROVED: Admin Approval
     PENDING_REVIEW --> REJECTED: Admin Rejection
     
-    AUTO_HEAL --> EXECUTING: Global Safety Check
+    AUTO_HEAL --> EXECUTING: Immediate Bypass (0-latency)
     APPROVED --> EXECUTING
     
-    EXECUTING --> VERIFYING: Wait for Stabilization
+    state EXECUTING {
+        direction LR
+        StalenessCheck --> Surgical_Kill
+        Surgical_Kill --> Iterative_Loop
+    }
+    
+    EXECUTING --> VERIFYING: SP: validate_issue_state
     VERIFYING --> RESOLVED: Metric Normal
     VERIFYING --> ESCALATED: Metric Still High
     
@@ -60,30 +65,26 @@ $$Z = \frac{x - \mu}{\sigma}$$
 *   **HIGH**: $Z \ge 2.0$ or $\ge 3$ anomalies in 2 hours.
 *   **MEDIUM**: $Z \ge 1.0$.
 
-### 🧠 Decision Scoring Logic
+### 🧠 Decision Scoring Logic (Phase 7)
 
-The scoring engine calculates a **Unified Confidence Rating** by aggregating statistical severities, rule-book priorities, and historical reliability.
+The scoring engine calculates a **Dynamic Priority Score** (`[0, 1]`) by aggregating statistical severities, AI confidence, and real-time system impact.
 
 ```mermaid
 flowchart TD
-    Anom([New Anomaly]) --> Rules{Rule LookUp}
+    Anom([New Anomaly]) --> Rules{Extract Vectors}
     
-    Rules -- No Match --> Default[Apply Global Baseline: 0.50]
-    Rules -- Match Found --> Weight[Fetch Base Rule Weight]
+    Rules --> AI[AI Confidence Z-Score: 20%]
+    Rules --> Sev[Base Severity: 30%]
+    Rules --> Sys[System Impact: 50%]
     
-    Weight --> History{Historical Review}
-    History -- Rejected Pattern --> Penalize[Decrease Score: -0.20]
-    History -- Approved Pattern --> Boost[Increase Score: +0.15]
+    AI --> Calc[Weighted Sum Calculation]
+    Sev --> Calc
+    Sys --> Calc
     
-    Penalize --> Calc[Weighted Sum Calculation]
-    Boost --> Calc
-    Default --> Calc
+    Calc --> Final{Validation Check}
     
-    Calc --> Stats[Apply Z-Score Multiplier]
-    Stats --> Final{Threshold Check}
-    
-    Final -- "> 0.85" --> Auto[AUTO_HEAL]
-    Final -- "< 0.85" --> Review[ADMIN_REVIEW]
+    Final -- "DB State Clear" --> Review[ADMIN_REVIEW]
+    Final -- "Issue Exists" --> Auto[AUTO_HEAL (Immediate Execution)]
 ```
 
 ---
@@ -100,12 +101,11 @@ To prevent the system from entering a feedback loop (where healing actions cause
 
 ---
 
-## 🛠️ Procedural Components
-
 ### 1. The Orchestrator (`run_auto_heal_pipeline`)
-Polls the `detected_issues` table for unanalyzed events and batches them (max 50) for processing. It uses a **Global Mutex Lock** (`GET_LOCK`) to ensure multiple database threads don't attempt to heal the same issue simultaneously.
+Triggered **every 1 second** by the MySQL Event Scheduler, this procedure polls the `detected_issues` table for unanalyzed events. It immediately cascades into AI analysis and decision making to ensure near-zero latency.
 
-### 2. The Learning Engine (`update_learning`)
-After every execution, the system compares the outcome. 
-- **Success**: Increases future confidence for that `issue_type` + `action_type` pair by **5%**.
-- **Failure**: Decreases future confidence by **5%**, eventually forcing poor-performing rules into manual review.
+### 2. The Execution Engine (`execute_healing_action_v2`)
+The core action engine capable of real-world surgical database modifications:
+- **Iterative Relief**: For `CONNECTION_OVERLOAD`, it iteratively kills the top CPU-consuming queries until active connection counts stabilize below a safe threshold, preventing mass blind-kills.
+- **Surgical Deadlock Kills**: Scans `sys.innodb_lock_waits` to map waiting locks precisely to the blocking `trx_mysql_thread_id`, terminating only the single rogue process.
+- **Race Guard**: Implements a strict timestamp check (`TIMESTAMPDIFF`) to abort executions if the issue is older than 10 seconds, preventing the system from "fighting ghosts".

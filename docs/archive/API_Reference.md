@@ -1,3 +1,12 @@
+# ⚠️ DEPRECATED - API Reference (FastAPI)
+
+> **This document has been superseded by [API_Documentation.md](../API_Documentation.md)**  
+> **Last Updated:** Legacy (Pre-Phase 7)  
+> **Status:** Archived for historical reference only  
+> **Use Instead:** [docs/API_Documentation.md](../API_Documentation.md) for current, comprehensive API documentation
+
+---
+
 # API Reference (FastAPI)
 
 The Database strictly limits external interactions to endpoints strictly tied to validation and metric resolution.

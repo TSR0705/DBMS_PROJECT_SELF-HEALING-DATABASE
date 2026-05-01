@@ -37,7 +37,7 @@ export default function DecisionsPage() {
   ).length;
   const avgConf =
     recentDecisions.length > 0
-      ? recentDecisions.reduce((sum, d) => sum + d.confidence_at_decision, 0) /
+      ? recentDecisions.reduce((sum, d) => sum + Math.min(1.0, d.confidence_at_decision), 0) /
         recentDecisions.length
       : 0;
 
@@ -96,7 +96,11 @@ export default function DecisionsPage() {
       header: 'Confidence',
       className: 'w-40',
       render: value => {
-        const pct = typeof value === 'number' ? Math.round(value * 100) : 0;
+        // [PHASE 7] Data Hardening: Cap confidence at 100% for UI safety
+        const rawValue = typeof value === 'number' ? value : 0;
+        const normalizedValue = Math.min(1.0, Math.max(0, rawValue));
+        const pct = Math.round(normalizedValue * 100);
+        
         const color = pct >= 70 ? 'bg-green-500' : pct >= 30 ? 'bg-amber-500' : 'bg-red-400';
         return (
           <div className="flex items-center space-x-3">
@@ -290,12 +294,12 @@ export default function DecisionsPage() {
                     <div
                       className="bg-blue-500 h-1.5 rounded-full"
                       style={{
-                        width: `${decision.confidence_at_decision * 100}%`,
+                        width: `${Math.min(1.0, decision.confidence_at_decision) * 100}%`,
                       }}
                     />
                   </div>
                   <span className="text-xs font-medium">
-                    {Math.round(decision.confidence_at_decision * 100)}%
+                    {Math.round(Math.min(1.0, decision.confidence_at_decision) * 100)}%
                   </span>
                 </div>
               </div>

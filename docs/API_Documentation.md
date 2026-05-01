@@ -70,7 +70,7 @@ The system enforces strict typing to ensure the Frontend receives consistent dat
 ---
 
 ## 🧪 Testing with Postman/cURL
-A pre-configured `postman-collection.json` is available in the root directory for standard testing. Alternatively, you can use:
+A pre-configured `postman-collection.json` is available in the `docs/` directory for standard testing. Alternatively, you can use:
 
 ```bash
 curl -X GET "http://localhost:8002/admin-reviews/"
