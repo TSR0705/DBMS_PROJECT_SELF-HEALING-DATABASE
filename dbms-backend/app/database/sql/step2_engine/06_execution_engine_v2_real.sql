@@ -1,6 +1,5 @@
 /*!40101 SET NAMES utf8mb4 */;
 SET collation_connection = 'utf8mb4_unicode_ci';
-
 DELIMITER //
 
 DROP PROCEDURE IF EXISTS execute_healing_action_v2//
@@ -15,6 +14,15 @@ proc_label: BEGIN
     DECLARE v_issue_exists     BOOLEAN     DEFAULT FALSE;
     DECLARE v_error_msg        TEXT        DEFAULT NULL;
 
+    -- [EXCEPTION HANDLER]
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION 
+    BEGIN
+        GET DIAGNOSTICS CONDITION 1 v_error_msg = MESSAGE_TEXT;
+        SET v_exec_status = 'FAILED';
+        INSERT INTO healing_actions (decision_id, action_type, execution_mode, executed_by, execution_status, verification_status, error_message)
+        VALUES (p_decision_id, v_action_type, 'AUTOMATIC', 'SYSTEM', 'FAILED', 'FAILED', v_error_msg);
+    END;
+
     -- [1] Fetch Context
     SELECT dl.issue_id, di.issue_type
     INTO   v_issue_id, v_issue_type
@@ -22,14 +30,14 @@ proc_label: BEGIN
     JOIN   detected_issues di ON dl.issue_id = di.issue_id
     WHERE  dl.decision_id = p_decision_id LIMIT 1;
 
-    -- [2] Re-validate before execution
+    -- [2] Re-validate
     CALL validate_issue_state(v_issue_id, v_issue_exists);
 
     IF v_issue_exists = TRUE THEN
         -- [3] Fetch Action
         SELECT action_type INTO v_action_type FROM action_rules WHERE issue_type = v_issue_type LIMIT 1;
 
-        -- [4] Execution Logic
+        -- [4] Execution
         IF v_action_type = 'KILL_CONNECTION' THEN
             SELECT id INTO v_process_id FROM information_schema.processlist
             WHERE command != 'Sleep' AND user NOT IN ('system user', 'event_scheduler')
