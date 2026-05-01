@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/PHOTOS/Screenshot 2026-05-01 140556.png" alt="Self-Healing Database Dashboard" width="100%" style="border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); margin-bottom: 20px;">
+ 
 
   <h1>🔮 AI-Powered DBMS Self-Healing Engine</h1>
 
