@@ -45,9 +45,11 @@ proc_label: BEGIN
         END IF;
 
         -- [4] Execution Logic
-        IF v_action_type = 'KILL_CONNECTION' THEN
+        IF v_action_type = 'KILL_CONNECTION' OR v_action_type = 'KILL_SLOW_QUERY' THEN
             SELECT id INTO v_process_id FROM information_schema.processlist
-            WHERE command != 'Sleep' AND user NOT IN ('system user', 'event_scheduler')
+            WHERE command != 'Sleep' 
+              AND user NOT IN ('system user', 'event_scheduler')
+              AND id != CONNECTION_ID()
             ORDER BY time DESC LIMIT 1;
             
             IF v_process_id IS NOT NULL THEN
