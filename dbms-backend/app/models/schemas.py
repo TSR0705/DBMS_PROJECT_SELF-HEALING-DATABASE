@@ -3,7 +3,7 @@ Pydantic models for DBMS self-healing pipeline API responses.
 Defines strict type validation for all API endpoints.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 from typing import Optional, List, Any
 from decimal import Decimal
@@ -80,6 +80,7 @@ class HealingAction(BaseModel):
     executed_by: Optional[str] = Field(None, description="Who/what executed the action")
     queue_status: Optional[str] = Field(None, description="Status in the execution queue")
     execution_status: Optional[str] = Field(None, description="Current status of action execution")
+    verification_status: Optional[str] = Field(None, description="Verification status after execution")
     system_status: str = Field(..., description="Computed unified system status")
     queued_at: Optional[datetime] = Field(None, description="Timestamp when task was queued")
     executed_at: Optional[datetime] = Field(None, description="Timestamp when action was executed")
