@@ -53,19 +53,28 @@ proc_label: BEGIN
                 SET v_queue_id = NULL;
             ELSE
                 UPDATE execution_queue SET status = 'PROCESSING', last_attempt_time = NOW(), updated_at = NOW() WHERE queue_id = v_queue_id;
+                
+                -- [CONTEXT] Track execution start independently
+                INSERT INTO execution_context (queue_id, decision_id, status, worker_id, last_heartbeat)
+                VALUES (v_queue_id, v_decision_id, 'RUNNING', p_worker_id, NOW());
             END IF;
         END IF;
     COMMIT;
 
     -- [4] EXECUTION & FAILURE CLASSIFICATION
     IF v_queue_id IS NOT NULL THEN
+        -- [CONTEXT] Final heartbeat before execution
+        UPDATE execution_context SET last_heartbeat = NOW() WHERE queue_id = v_queue_id;
+        
         CALL execute_healing_action_v2(v_decision_id);
         
         SELECT execution_status, error_message INTO v_exec_status, v_error_msg
         FROM healing_actions WHERE decision_id = v_decision_id ORDER BY action_id DESC LIMIT 1;
 
         IF v_exec_status = 'SUCCESS' OR v_exec_status = 'SKIPPED' THEN
-            UPDATE execution_queue SET status = 'COMPLETED', updated_at = NOW() WHERE queue_id = v_queue_id;
+            -- [CONTEXT] Mark context as success, but queue remains PROCESSING for verification
+            UPDATE execution_context SET status = 'SUCCESS', completed_at = NOW() WHERE queue_id = v_queue_id;
+            
             -- Reset throttling on success
             UPDATE throttle_state SET cooldown_time = 30, escalation_level = 0 WHERE issue_type = v_issue_type;
         ELSE
