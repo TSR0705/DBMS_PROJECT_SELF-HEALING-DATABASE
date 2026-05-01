@@ -38,7 +38,10 @@ proc_label: BEGIN
         CLOSE issue_cursor;
 
         -- [2] EXECUTION PHASE (Drains execution_queue)
-        CALL run_execution_worker();
+        CALL run_execution_worker('PIPELINE_ORCHESTRATOR');
+
+        -- [3] VERIFICATION PHASE (Closes the Honest Loop)
+        CALL run_verification_worker();
 
         DO RELEASE_LOCK('auto_heal_pipeline_lock');
     END IF;
