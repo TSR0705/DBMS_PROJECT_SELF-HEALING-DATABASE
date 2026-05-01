@@ -107,7 +107,7 @@ export interface PipelineEvent {
   learning_outcome?: string;
   review_status?: string;
   process_state: 'ANALYZED' | 'DECIDED' | 'WAITING_REVIEW' | 'EXECUTING' | 'FINISHED';
-  outcome: 'SUCCESS' | 'FAILED' | 'REJECTED' | 'PENDING';
+  outcome: 'SUCCESS' | 'FAILED' | 'REJECTED' | 'PENDING' | 'SKIPPED';
 }
 
 export interface RealtimeData {

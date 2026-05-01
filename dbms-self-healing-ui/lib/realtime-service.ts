@@ -165,7 +165,11 @@ class RealtimeService {
 
       const resolvedLearningIssues = learningResult
         .filter(l => l.outcome === 'RESOLVED')
-        .map(l => l.issue_id);
+        .map(l => {
+          const d = decisionsResult.find(dec => dec.decision_id === l.decision_id);
+          return d?.issue_id;
+        })
+        .filter((id): id is string => id !== undefined);
       
       const successfulActionIssues = actionsResult
         .filter(a => a.execution_status === 'SUCCESS')
@@ -173,7 +177,7 @@ class RealtimeService {
           const d = decisionsResult.find(dec => dec.decision_id === a.decision_id);
           return d?.issue_id;
         })
-        .filter(Boolean);
+        .filter((id): id is string => id !== undefined);
 
       const issuesResolved = new Set([...resolvedLearningIssues, ...successfulActionIssues]).size;
 
