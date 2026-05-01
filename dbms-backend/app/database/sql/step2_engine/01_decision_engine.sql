@@ -67,8 +67,8 @@ proc_label: BEGIN
             INSERT INTO execution_queue (decision_id, priority_score, status)
             VALUES (@last_decision_id, v_priority_score, 'PENDING');
         ELSE
-            INSERT INTO admin_reviews (issue_id, decision_id, review_status, assigned_to)
-            VALUES (p_issue_id, @last_decision_id, 'PENDING', 'DBA_ON_CALL');
+            INSERT INTO admin_reviews (issue_id, decision_id, review_status, issue_type, action_type)
+            VALUES (p_issue_id, @last_decision_id, 'PENDING', v_issue_type, 'MANUAL_VERIFICATION');
         END IF;
     END IF;
 END //
