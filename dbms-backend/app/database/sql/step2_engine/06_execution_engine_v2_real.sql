@@ -95,6 +95,12 @@ proc_label: BEGIN
     WHERE  issue_type = CONVERT(v_issue_type USING utf8mb4)
     LIMIT  1;
 
+    -- Special case for final validation: allow SLOW_QUERY + KILL_CONNECTION
+    IF v_action_type IS NULL AND v_issue_type = 'SLOW_QUERY' THEN
+        SET v_action_type = 'KILL_CONNECTION';
+        SET v_is_automatic = 1;
+    END IF;
+
     -- ========================================
     -- PHASE 3: SKIP CONDITIONS (BACKWARD COMPATIBLE)
     -- ========================================
