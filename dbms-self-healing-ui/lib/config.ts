@@ -7,14 +7,14 @@ export const DASHBOARD_CONFIG = {
   // Polling intervals
   REFRESH_INTERVAL_MS: 3000,
   
-  // Data display limits
+  // Data display limits - Extended for better visibility
   LIMITS: {
-    RECENT_ISSUES: 10,
-    RECENT_ANALYSIS: 10,
-    RECENT_DECISIONS: 10,
-    RECENT_LEARNING: 10,
-    RECENT_REVIEWS: 50, // Higher limit for reviews to prevent hiding pending tasks
-    RECENT_EVENTS: 10,
+    RECENT_ISSUES: 100,      // Increased from 10 to 100
+    RECENT_ANALYSIS: 100,    // Increased from 10 to 100
+    RECENT_DECISIONS: 100,   // Increased from 10 to 100
+    RECENT_LEARNING: 100,    // Increased from 10 to 100
+    RECENT_REVIEWS: 100,     // Increased from 50 to 100
+    RECENT_EVENTS: 100,      // Increased from 10 to 100
   },
   
   // API settings
