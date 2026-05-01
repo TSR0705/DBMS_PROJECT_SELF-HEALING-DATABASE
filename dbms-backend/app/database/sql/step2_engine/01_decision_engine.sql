@@ -9,11 +9,14 @@ proc_label: BEGIN
     DECLARE v_confidence_score DECIMAL(15,6);
     DECLARE v_issue_type       VARCHAR(255);
     DECLARE v_severity_weight  DECIMAL(15,6);
+    DECLARE v_impact_weight    DECIMAL(15,6) DEFAULT 0.0;
     DECLARE v_priority_score   DECIMAL(15,6);
     DECLARE v_decision_type    VARCHAR(50);
     DECLARE v_decision_reason  VARCHAR(255);
     DECLARE v_exists           INT;
     DECLARE v_issue_exists     BOOLEAN DEFAULT FALSE;
+    DECLARE v_active_q         INT;
+    DECLARE v_lock_w           INT;
 
     -- [1] Fetch AI Context
     SELECT d.issue_type, a.severity_level, COALESCE(a.severity_ratio, 0.0) 
@@ -24,13 +27,22 @@ proc_label: BEGIN
 
     IF v_issue_type IS NULL THEN LEAVE proc_label; END IF;
 
-    -- [2] Calculate Priority Score
+    -- [2] [PHASE 7] Smart Prioritization Logic
+    -- AI Weight (40%) + System Impact (60%)
     CASE v_severity_level
         WHEN 'CRITICAL' THEN SET v_severity_weight = 1.0;
         WHEN 'HIGH'     THEN SET v_severity_weight = 0.7;
         ELSE                 SET v_severity_weight = 0.4;
     END CASE;
-    SET v_priority_score = (v_severity_weight * 0.6) + (LEAST(v_confidence_score, 1.0) * 0.4);
+
+    -- Fetch Current System Impact
+    SELECT active_queries, lock_waits INTO v_active_q, v_lock_w 
+    FROM system_metrics ORDER BY metric_id DESC LIMIT 1;
+    
+    SET v_impact_weight = (LEAST(v_active_q, 20) / 20.0 * 0.7) + (LEAST(v_lock_w, 10) / 10.0 * 0.3);
+    
+    -- Final Priority Formula
+    SET v_priority_score = (v_severity_weight * 0.3) + (v_confidence_score * 0.2) + (v_impact_weight * 0.5);
 
     -- [3] Authority Validation
     CALL validate_issue_state(p_issue_id, v_issue_exists);
@@ -38,27 +50,25 @@ proc_label: BEGIN
     -- [4] Decision Routing
     IF v_issue_exists = TRUE THEN
         SET v_decision_type = 'AUTO_HEAL';
-        SET v_decision_reason = CONCAT('AUTO_HEAL authorized: Validated impact (Priority: ', ROUND(v_priority_score, 2), ')');
+        SET v_decision_reason = CONCAT('AUTO_HEAL authorized: Phase 7 Smart Priority (', ROUND(v_priority_score, 2), ')');
     ELSE
         SET v_decision_type = 'ADMIN_REVIEW';
-        SET v_decision_reason = CONCAT('ADMIN_REVIEW: DB state clean, AI prediction ignored (Priority: ', ROUND(v_priority_score, 2), ')');
+        SET v_decision_reason = CONCAT('ADMIN_REVIEW: DB state clean (Priority: ', ROUND(v_priority_score, 2), ')');
     END IF;
 
-    -- [5] Record Decision and Escalate
+    -- [5] Record Decision
     SELECT COUNT(*) INTO v_exists FROM decision_log WHERE issue_id = p_issue_id;
     IF v_exists = 0 THEN
         INSERT INTO decision_log (issue_id, decision_type, decision_reason, confidence_at_decision)
         VALUES (p_issue_id, v_decision_type, v_decision_reason, v_priority_score);
-        
         SET @last_decision_id = LAST_INSERT_ID();
 
         IF v_decision_type = 'AUTO_HEAL' THEN
             INSERT INTO execution_queue (decision_id, priority_score, status)
             VALUES (@last_decision_id, v_priority_score, 'PENDING');
         ELSE
-            -- [AUDIT FIX] Escalate to admin_reviews table for UI visibility
-            INSERT INTO admin_reviews (decision_id, status, requested_at)
-            VALUES (@last_decision_id, 'PENDING', NOW());
+            INSERT INTO admin_reviews (issue_id, decision_id, review_status, assigned_to)
+            VALUES (p_issue_id, @last_decision_id, 'PENDING', 'DBA_ON_CALL');
         END IF;
     END IF;
 END //
