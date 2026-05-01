@@ -26,28 +26,100 @@ Our **Self-Healing Engine** monitors the database pulse and takes **autonomous, 
 
 ## ✨ System Showcase
 
-### 1. The Premium Command Center
-The frontend is built with Next.js 14, Tailwind CSS, and Shadcn UI, featuring a stunning **Glassmorphism aesthetic**. It provides real-time transaction monitoring, aggregate health statistics, and an interactive grid for decision management.
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <img src="docs/PHOTOS/hero-dashboard.png" alt="Real-Time Dashboard" width="100%">
+      <br>
+      <sub><b>Real-Time Command Center</b></sub>
+      <br>
+      <sub>Live metrics, issue detection, and system health monitoring</sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/PHOTOS/Screenshot 2026-05-01 210613.png" alt="Issue Detection Pipeline" width="100%">
+      <br>
+      <sub><b>Intelligent Issue Detection</b></sub>
+      <br>
+      <sub>Automated anomaly classification with severity scoring</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <img src="docs/PHOTOS/Screenshot 2026-05-01 210643.png" alt="AI Analysis Engine" width="100%">
+      <br>
+      <sub><b>AI-Powered Analysis</b></sub>
+      <br>
+      <sub>Z-score confidence and risk assessment in real-time</sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/PHOTOS/Screenshot 2026-05-01 210701.png" alt="Decision System" width="100%">
+      <br>
+      <sub><b>Autonomous Decision Engine</b></sub>
+      <br>
+      <sub>Auto-heal vs. admin review routing with confidence thresholds</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <img src="docs/PHOTOS/healing-actions.png" alt="Healing Actions" width="100%">
+      <br>
+      <sub><b>Surgical Healing Execution</b></sub>
+      <br>
+      <sub>Real-time action tracking with verification status</sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/PHOTOS/admin-review.png" alt="Admin Control" width="100%">
+      <br>
+      <sub><b>Human-in-the-Loop Control</b></sub>
+      <br>
+      <sub>Admin review queue for ambiguous cases requiring validation</sub>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <img src="docs/PHOTOS/learning-ecosystem.png" alt="Learning Ecosystem" width="70%">
+      <br>
+      <sub><b>Continuous Learning Ecosystem</b></sub>
+      <br>
+      <sub>Feedback loop tracking outcomes and improving decision confidence over time</sub>
+    </td>
+  </tr>
+</table>
 
-<div align="center">
-  <img src="docs/photos/admin-review.png" alt="Admin Control Center" width="90%" style="border-radius: 8px; margin: 15px 0;">
-</div>
+---
 
-### 2. Surgical, Real-Time Execution
-The engine doesn't just log issues—it fixes them. Using a native **MySQL Event Scheduler (1s interval)**, the system bypasses async queues for critical issues. 
-*   **Deadlocks**: Surgically maps `sys.innodb_lock_waits` to exact blocking PIDs.
-*   **Overloads**: Initiates an Iterative Relief Loop, selectively killing queries until the system stabilizes.
+## 🎯 Key Features
 
-<div align="center">
-  <img src="docs/photos/healing-actions.png" alt="Live Healing Actions" width="90%" style="border-radius: 8px; margin: 15px 0;">
-</div>
-
-### 3. Dynamic Priority Scoring & Human-in-the-Loop
-Not all anomalies are equal. The SQL logic engines assign intelligent risk scores based on **Z-score confidence** and **actual system impact**. High-priority issues are auto-healed instantly, while ambiguous anomalies are sent to the Admin Review queue for human validation.
-
-<div align="center">
-  <img src="docs/photos/learning-ecosystem.png" alt="Learning Ecosystem" width="90%" style="border-radius: 8px; margin: 15px 0;">
-</div>
+<table>
+  <tr>
+    <td width="33%" align="center">
+      <h3>⚡ Sub-Second Detection</h3>
+      <p>MySQL Event Scheduler polls every 1 second, detecting anomalies before they cascade into system failures</p>
+    </td>
+    <td width="33%" align="center">
+      <h3>🧠 AI-Driven Decisions</h3>
+      <p>Z-score confidence scoring and baseline analysis determine auto-heal vs. human review routing</p>
+    </td>
+    <td width="33%" align="center">
+      <h3>🔧 Surgical Execution</h3>
+      <p>Targeted process kills using sys.innodb_lock_waits mapping—no blind terminations</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="33%" align="center">
+      <h3>🛡️ Safety Guards</h3>
+      <p>10-second race condition protection and iterative relief loops prevent over-correction</p>
+    </td>
+    <td width="33%" align="center">
+      <h3>📊 Real-Time Dashboard</h3>
+      <p>Glassmorphism UI with live metrics, pipeline visualization, and admin override controls</p>
+    </td>
+    <td width="33%" align="center">
+      <h3>🔄 Continuous Learning</h3>
+      <p>Feedback loop tracks outcomes and adjusts confidence thresholds over time</p>
+    </td>
+  </tr>
+</table>
 
 ---
 
