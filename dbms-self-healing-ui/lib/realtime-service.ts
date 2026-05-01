@@ -163,10 +163,19 @@ class RealtimeService {
         a => a.severity_level === 'CRITICAL'
       ).length;
 
-      const resolvedLearning = learningResult.filter(
-        l => l.outcome === 'RESOLVED'
-      ).length;
-      const issuesResolved = resolvedLearning + successfulActions;
+      const resolvedLearningIssues = learningResult
+        .filter(l => l.outcome === 'RESOLVED')
+        .map(l => l.issue_id);
+      
+      const successfulActionIssues = actionsResult
+        .filter(a => a.execution_status === 'SUCCESS')
+        .map(a => {
+          const d = decisionsResult.find(dec => dec.decision_id === a.decision_id);
+          return d?.issue_id;
+        })
+        .filter(Boolean);
+
+      const issuesResolved = new Set([...resolvedLearningIssues, ...successfulActionIssues]).size;
 
       // Pipeline Event Generation (Frontend Merge)
       const pipelineEvents: PipelineEvent[] = issuesResult.map(issue => {
@@ -196,6 +205,9 @@ class RealtimeService {
         } else if (action?.execution_status === 'FAILED') {
           process_state = 'FINISHED';
           outcome = 'FAILED';
+        } else if (action?.execution_status === 'SKIPPED') {
+          process_state = 'FINISHED';
+          outcome = 'SKIPPED';
         } else if (action?.execution_status === 'PENDING') {
           process_state = 'EXECUTING';
           outcome = 'PENDING';
@@ -269,10 +281,14 @@ class RealtimeService {
         recentAnalysis: analysisResult.slice(0, DASHBOARD_CONFIG.LIMITS.RECENT_ANALYSIS),
         recentDecisions: decisionsResult.slice(0, DASHBOARD_CONFIG.LIMITS.RECENT_DECISIONS),
         recentLearning: learningResult.slice(0, DASHBOARD_CONFIG.LIMITS.RECENT_LEARNING),
-        recentReviews: [
-          ...reviewsResult.filter(r => r.review_status === 'PENDING'),
-          ...reviewsResult.filter(r => r.review_status !== 'PENDING'),
-        ].slice(0, DASHBOARD_CONFIG.LIMITS.RECENT_REVIEWS),
+        recentReviews: Array.from(
+          new Map(
+            [
+              ...reviewsResult.filter(r => r.review_status === 'PENDING'),
+              ...reviewsResult.filter(r => r.review_status !== 'PENDING'),
+            ].map(r => [r.review_id, r])
+          ).values()
+        ).slice(0, DASHBOARD_CONFIG.LIMITS.RECENT_REVIEWS),
         recentEvents: sortedEvents.slice(0, DASHBOARD_CONFIG.LIMITS.RECENT_EVENTS),
       };
 

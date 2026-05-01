@@ -36,7 +36,7 @@ export function PipelineView({ events, loading }: PipelineViewProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
       {events.map((event) => (
-        <div key={event.issue_id} className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+        <div key={`${event.issue_id}-${event.detected_at}`} className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
           {/* Header */}
           <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
             <div className="flex items-center space-x-2">
@@ -102,6 +102,7 @@ function StatusIndicator({ process, outcome }: { process: PipelineEvent['process
     SUCCESS: { label: 'Success', color: 'bg-green-500' },
     FAILED: { label: 'Failed', color: 'bg-red-500' },
     REJECTED: { label: 'Rejected', color: 'bg-slate-400' },
+    SKIPPED: { label: 'Skipped', color: 'bg-indigo-300' },
     PENDING: { 
       label: process === 'WAITING_REVIEW' ? 'Waiting Review' : 
              process === 'EXECUTING' ? 'Executing' :

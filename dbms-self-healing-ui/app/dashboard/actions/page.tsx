@@ -314,9 +314,9 @@ export default function HealingActionsPage() {
         description="Latest healing actions executed by the system"
       >
         <div className="space-y-4">
-          {recentActions.slice(0, 5).map(action => (
+          {recentActions.slice(0, 5).map((action, idx) => (
             <div
-              key={action.decision_id}
+              key={action.action_id || `pending-${action.decision_id}-${idx}`}
               className="p-6 bg-white border border-slate-200 rounded-xl"
             >
               <div className="flex items-center justify-between mb-4">
