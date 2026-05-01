@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/PHOTOS/hero-dashboard.png" alt="Self-Healing Database Dashboard" width="100%" style="border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); margin-bottom: 20px;">
+  <img src="docs/PHOTOS/Screenshot 2026-05-01 140556.png" alt="Self-Healing Database Dashboard" width="100%" style="border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); margin-bottom: 20px;">
 
   <h1>🔮 AI-Powered DBMS Self-Healing Engine</h1>
 
@@ -29,7 +29,7 @@ Our **Self-Healing Engine** monitors the database pulse and takes **autonomous, 
 <table>
   <tr>
     <td width="50%" align="center">
-      <img src="docs/PHOTOS/hero-dashboard.png" alt="Real-Time Dashboard" width="100%">
+      <img src="docs/PHOTOS/Screenshot 2026-05-01 140537.png" alt="Real-Time Dashboard" width="100%">
       <br>
       <sub><b>Real-Time Command Center</b></sub>
       <br>
