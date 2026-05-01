@@ -52,7 +52,8 @@ BEGIN
             FROM information_schema.processlist
             WHERE command = 'Query' AND info IS NOT NULL
               AND user NOT IN ('system user', 'event_scheduler')
-            ORDER BY time DESC LIMIT 1;
+            GROUP BY normalize_query_pattern(info)
+            ORDER BY COUNT(*) DESC LIMIT 1;
 
             SET v_pattern_hash = SHA2(v_query_pattern, 256);
 

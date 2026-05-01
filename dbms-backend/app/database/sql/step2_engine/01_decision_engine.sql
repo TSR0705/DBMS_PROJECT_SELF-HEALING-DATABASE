@@ -70,29 +70,21 @@ proc_label: BEGIN
         VALUES (p_issue_id, v_decision_type, v_decision_reason, v_priority_score);
         SET @last_decision_id = LAST_INSERT_ID();
 
-        -- [PHASE 7] DEADLOCK Prioritization & Race Condition Guard
-        IF v_issue_type = 'DEADLOCK' AND v_decision_type = 'AUTO_HEAL' THEN
-            -- Check for staleness (Race Condition Guard)
-            -- If more than 3 seconds passed since detection, it's too late for surgical deadlock kill
+        -- [PHASE 7] Immediate Execution & Race Condition Guard
+        IF v_decision_type = 'AUTO_HEAL' THEN
             SELECT detected_at INTO @v_det_at FROM detected_issues WHERE issue_id = p_issue_id;
             
-            IF TIMESTAMPDIFF(SECOND, @v_det_at, NOW()) > 3 THEN
+            IF TIMESTAMPDIFF(SECOND, @v_det_at, NOW()) > 10 THEN
                 INSERT INTO debug_log(step, message)
-                VALUES ('timing', CONCAT('DEADLOCK skipped: Stale by ', TIMESTAMPDIFF(SECOND, @v_det_at, NOW()), 's'));
+                VALUES ('timing', CONCAT(v_issue_type, ' skipped: Stale by ', TIMESTAMPDIFF(SECOND, @v_det_at, NOW()), 's'));
                 
-                -- Update decision reason to reflect staleness
                 UPDATE decision_log SET decision_reason = CONCAT(decision_reason, ' [SKIPPED: STALE]') WHERE decision_id = @last_decision_id;
             ELSE
-                -- IMMEDIATE EXECUTION: Bypass queue to minimize latency
                 INSERT INTO debug_log(step, message)
-                VALUES ('timing', CONCAT('DEADLOCK immediate execution. Delay: ', TIMESTAMPDIFF(SECOND, @v_det_at, NOW()), 's'));
+                VALUES ('timing', CONCAT(v_issue_type, ' immediate execution. Delay: ', TIMESTAMPDIFF(SECOND, @v_det_at, NOW()), 's'));
                 
                 CALL execute_healing_action_v2(@last_decision_id);
-                -- No need to insert into queue as it's already handled
             END IF;
-        ELSEIF v_decision_type = 'AUTO_HEAL' THEN
-            INSERT INTO execution_queue (decision_id, priority_score, status)
-            VALUES (@last_decision_id, v_priority_score, 'PENDING');
         ELSE
             INSERT INTO admin_reviews (issue_id, decision_id, review_status, issue_type, action_type)
             VALUES (p_issue_id, @last_decision_id, 'PENDING', v_issue_type, 'MANUAL_VERIFICATION');

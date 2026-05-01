@@ -46,7 +46,7 @@ proc_label: BEGIN
         END IF;
 
         -- [4] Execution Logic
-        IF v_action_type = 'KILL_CONNECTION' OR v_action_type = 'KILL_SLOW_QUERY' THEN
+        IF v_action_type = 'KILL_CONNECTION' THEN
             -- [PHASE 7] Iterative Kill Loop for CONNECTION_OVERLOAD
             SET @kill_count = 0;
             SET @max_kills = 10; -- Safety break
@@ -82,6 +82,19 @@ proc_label: BEGIN
                     SET @v_current_active = 0; -- Break loop if no more candidates
                 END IF;
             END WHILE;
+        ELSEIF v_action_type = 'KILL_SLOW_QUERY' THEN
+            SELECT id INTO v_process_id FROM information_schema.processlist
+            WHERE command != 'Sleep' 
+              AND user NOT IN ('system user', 'event_scheduler')
+              AND id != CONNECTION_ID()
+              AND time >= 10
+            ORDER BY time DESC LIMIT 1;
+            
+            IF v_process_id IS NOT NULL THEN
+                SET @sql = CONCAT('KILL ', v_process_id);
+                PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+                SET v_exec_status = 'SUCCESS';
+            END IF;
         ELSEIF v_action_type = 'ROLLBACK_TRANSACTION' THEN
             -- [PHASE 7] Targeted Deadlock Resolution
             -- 1. Extract blocking transaction details from sys view
