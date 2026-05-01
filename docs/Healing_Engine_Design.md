@@ -84,7 +84,7 @@ flowchart TD
     Calc --> Final{Validation Check}
     
     Final -- "DB State Clear" --> Review[ADMIN_REVIEW]
-    Final -- "Issue Exists" --> Auto[AUTO_HEAL (Immediate Execution)]
+    Final -- "Issue Exists" --> Auto["AUTO_HEAL - Immediate Execution"]
 ```
 
 ---
