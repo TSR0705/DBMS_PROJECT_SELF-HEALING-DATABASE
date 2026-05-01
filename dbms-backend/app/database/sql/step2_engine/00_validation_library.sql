@@ -9,60 +9,58 @@ CREATE PROCEDURE validate_issue_state(
 BEGIN
     DECLARE v_issue_type       VARCHAR(255);
     DECLARE v_active_queries   INT DEFAULT 0;
-    DECLARE v_lock_count       INT DEFAULT 0;
+    DECLARE v_lock_waits       INT DEFAULT 0;
     DECLARE v_dummy_id         BIGINT DEFAULT NULL;
     DECLARE v_dynamic_thresh   DECIMAL(10,2) DEFAULT 20;
+    DECLARE v_query_pattern    TEXT;
+    DECLARE v_pattern_hash     VARCHAR(64);
 
     SET p_issue_exists = FALSE;
 
-    -- [1] Fetch Contextual Detection Data
+    -- [1] Capture Current System Snapshot
+    CALL collect_system_metrics();
+
+    -- [2] Fetch Context
     SELECT issue_type, raw_metric_value 
     INTO v_issue_type, v_dynamic_thresh
     FROM detected_issues
-    WHERE issue_id = p_issue_id
-    LIMIT 1;
+    WHERE issue_id = p_issue_id LIMIT 1;
 
     CASE v_issue_type
         WHEN 'SLOW_QUERY' THEN
-            -- [STRICT] Dynamic threshold + System User Exclusion
-            SELECT id INTO v_dummy_id
+            -- Advanced Impact Analysis: Check if threads_running is also high
+            SELECT COUNT(*) INTO v_active_queries
             FROM information_schema.processlist
-            WHERE command = 'Query' 
-              AND time > GREATEST(15, v_dynamic_thresh * 0.7)
-              AND user NOT IN ('system user', 'event_scheduler', 'root')
-              AND info IS NOT NULL
-              AND info NOT LIKE '%validate_issue_state%'
-            LIMIT 1;
-            IF v_dummy_id IS NOT NULL THEN SET p_issue_exists = TRUE; END IF;
+            WHERE command = 'Query' AND time > v_dynamic_thresh;
+
+            IF v_active_queries >= 1 THEN
+                -- Also check system pressure (Load factor)
+                SELECT connections INTO v_lock_waits FROM system_metrics ORDER BY metric_id DESC LIMIT 1;
+                IF v_lock_waits > 10 OR v_active_queries > 3 THEN SET p_issue_exists = TRUE; END IF;
+            END IF;
 
         WHEN 'CONNECTION_OVERLOAD' THEN
-            -- [STRICT] Query Signature Signature (Query Grouping)
+            -- [PHASE 7] Burst Detection via Query Normalization
+            SELECT normalize_query_pattern(info) INTO v_query_pattern
+            FROM information_schema.processlist
+            WHERE command = 'Query' AND info IS NOT NULL
+              AND user NOT IN ('system user', 'event_scheduler')
+            ORDER BY time DESC LIMIT 1;
+
+            SET v_pattern_hash = SHA2(v_query_pattern, 256);
+
+            -- Count occurrences of the SAME pattern
             SELECT COUNT(*) INTO v_active_queries
-            FROM information_schema.processlist p1
-            JOIN (
-                -- Identify the exact query pattern causing the burst
-                SELECT SUBSTRING(info, 1, 60) as signature
-                FROM information_schema.processlist
-                WHERE command = 'Query' AND info IS NOT NULL
-                  AND user NOT IN ('system user', 'event_scheduler')
-                GROUP BY signature
-                ORDER BY COUNT(*) DESC
-                LIMIT 1
-            ) p2 ON SUBSTRING(p1.info, 1, 60) = p2.signature
-            WHERE p1.command = 'Query' AND p1.time >= 2;
-            
-            IF v_active_queries >= 2 THEN SET p_issue_exists = TRUE; END IF;
+            FROM information_schema.processlist
+            WHERE normalize_query_pattern(info) = v_query_pattern
+              AND command = 'Query';
+
+            IF v_active_queries >= 3 THEN SET p_issue_exists = TRUE; END IF;
 
         WHEN 'DEADLOCK' THEN
-            -- [STRICT] Blocking Chain Grouping
-            SELECT COUNT(waiting_trx_id) INTO v_lock_count
-            FROM sys.innodb_lock_waits
-            WHERE blocking_trx_id IS NOT NULL
-            GROUP BY blocking_trx_id
-            ORDER BY COUNT(waiting_trx_id) DESC
-            LIMIT 1;
-            
-            IF v_lock_count >= 1 THEN SET p_issue_exists = TRUE; END IF;
+            -- Use system_metrics for multi-source verification
+            SELECT lock_waits INTO v_lock_waits FROM system_metrics ORDER BY metric_id DESC LIMIT 1;
+            IF v_lock_waits >= 1 THEN SET p_issue_exists = TRUE; END IF;
 
         ELSE
             SET p_issue_exists = FALSE;
