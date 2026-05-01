@@ -183,16 +183,22 @@ class RealtimeService {
         let process_state: PipelineEvent['process_state'] = 'ANALYZED';
         let outcome: PipelineEvent['outcome'] = 'PENDING';
 
-        // NEW STATUS ENGINE LOGIC
+        // NEW STATUS ENGINE LOGIC (PHASE 7 UNIFIED)
         if (review?.review_status === 'REJECTED') {
           process_state = 'FINISHED';
           outcome = 'REJECTED';
         } else if (learning) {
           process_state = 'FINISHED';
           outcome = (learning.outcome as PipelineEvent['outcome']) || 'SUCCESS';
-        } else if (action) {
+        } else if (action?.execution_status === 'SUCCESS') {
+          process_state = 'FINISHED';
+          outcome = 'SUCCESS';
+        } else if (action?.execution_status === 'FAILED') {
+          process_state = 'FINISHED';
+          outcome = 'FAILED';
+        } else if (action?.execution_status === 'PENDING') {
           process_state = 'EXECUTING';
-          outcome = (action.execution_status as PipelineEvent['outcome']) || 'PENDING';
+          outcome = 'PENDING';
         } else if (decision?.decision_type === 'ADMIN_REVIEW') {
           process_state = 'WAITING_REVIEW';
           outcome = 'PENDING';
