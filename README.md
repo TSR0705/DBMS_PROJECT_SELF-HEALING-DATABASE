@@ -1,5 +1,5 @@
 <div align="center">
- 
+  <img src="docs/PHOTOS/HOME.png" alt="Self-Healing Database Dashboard" width="100%" style="border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); margin-bottom: 20px;">
 
   <h1>🔮 AI-Powered DBMS Self-Healing Engine</h1>
 
@@ -29,14 +29,14 @@ Our **Self-Healing Engine** monitors the database pulse and takes **autonomous, 
 <table>
   <tr>
     <td width="50%" align="center">
-      <img src="docs/PHOTOS/Screenshot 2026-05-01 140537.png" alt="Real-Time Dashboard" width="100%">
+      <img src="docs/PHOTOS/SYSTEM_OVERVIEW01.png" alt="System Overview Dashboard" width="100%">
       <br>
       <sub><b>Real-Time Command Center</b></sub>
       <br>
       <sub>Live metrics, issue detection, and system health monitoring</sub>
     </td>
     <td width="50%" align="center">
-      <img src="docs/PHOTOS/Screenshot 2026-05-01 210613.png" alt="Issue Detection Pipeline" width="100%">
+      <img src="docs/PHOTOS/DETECTED_ISSUES.png" alt="Issue Detection Pipeline" width="100%">
       <br>
       <sub><b>Intelligent Issue Detection</b></sub>
       <br>
@@ -45,14 +45,14 @@ Our **Self-Healing Engine** monitors the database pulse and takes **autonomous, 
   </tr>
   <tr>
     <td width="50%" align="center">
-      <img src="docs/PHOTOS/Screenshot 2026-05-01 210643.png" alt="AI Analysis Engine" width="100%">
+      <img src="docs/PHOTOS/AI_ANALYSIS.png" alt="AI Analysis Engine" width="100%">
       <br>
       <sub><b>AI-Powered Analysis</b></sub>
       <br>
       <sub>Z-score confidence and risk assessment in real-time</sub>
     </td>
     <td width="50%" align="center">
-      <img src="docs/PHOTOS/Screenshot 2026-05-01 210701.png" alt="Decision System" width="100%">
+      <img src="docs/PHOTOS/DECISION_LOG.png" alt="Decision System" width="100%">
       <br>
       <sub><b>Autonomous Decision Engine</b></sub>
       <br>
@@ -61,14 +61,14 @@ Our **Self-Healing Engine** monitors the database pulse and takes **autonomous, 
   </tr>
   <tr>
     <td width="50%" align="center">
-      <img src="docs/PHOTOS/healing-actions.png" alt="Healing Actions" width="100%">
+      <img src="docs/PHOTOS/HEALING_ACTIONS.png" alt="Healing Actions" width="100%">
       <br>
       <sub><b>Surgical Healing Execution</b></sub>
       <br>
       <sub>Real-time action tracking with verification status</sub>
     </td>
     <td width="50%" align="center">
-      <img src="docs/PHOTOS/admin-review.png" alt="Admin Control" width="100%">
+      <img src="docs/PHOTOS/ADMIN_REVIEW.png" alt="Admin Control" width="100%">
       <br>
       <sub><b>Human-in-the-Loop Control</b></sub>
       <br>
@@ -77,7 +77,7 @@ Our **Self-Healing Engine** monitors the database pulse and takes **autonomous, 
   </tr>
   <tr>
     <td colspan="2" align="center">
-      <img src="docs/PHOTOS/learning-ecosystem.png" alt="Learning Ecosystem" width="70%">
+      <img src="docs/PHOTOS/LEARNING_HISTORY.png" alt="Learning Ecosystem" width="70%">
       <br>
       <sub><b>Continuous Learning Ecosystem</b></sub>
       <br>
