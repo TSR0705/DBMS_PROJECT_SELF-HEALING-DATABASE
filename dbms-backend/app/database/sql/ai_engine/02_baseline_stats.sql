@@ -17,6 +17,7 @@ CREATE PROCEDURE compute_baseline(
     OUT p_q3 DECIMAL(15,6)
 )
 BEGIN
+    -- Calculate baseline from historical data (include all severity levels for better baseline)
     SELECT 
         COALESCE(
             SUM(COALESCE(d.raw_metric_value, 0) * (25 - TIMESTAMPDIFF(HOUR, d.detected_at, NOW()))) / 
@@ -28,27 +29,23 @@ BEGIN
         MAX(COALESCE(d.raw_metric_value, 0))
     INTO p_avg, p_std, p_min, p_max
     FROM detected_issues d
-    LEFT JOIN ai_analysis a ON d.issue_id = a.issue_id
     WHERE d.issue_type COLLATE utf8mb4_unicode_ci = CONVERT(p_issue_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
       AND d.detected_at >= (NOW() - INTERVAL 24 HOUR)
       AND d.issue_id != p_issue_id
-      AND (a.severity_level != 'CRITICAL' OR a.severity_level IS NULL)
       AND (
             (p_metric_group = 'LOW' AND COALESCE(d.raw_metric_value, 0) < 100) OR
             (p_metric_group = 'MEDIUM' AND COALESCE(d.raw_metric_value, 0) >= 100 AND COALESCE(d.raw_metric_value, 0) < 1000) OR
             (p_metric_group = 'HIGH' AND COALESCE(d.raw_metric_value, 0) >= 1000)
       );
 
-    -- Quartiles (IQR) Detection Base
+    -- Quartiles (IQR) Detection Base (include all historical data)
     WITH RankedValues AS (
         SELECT COALESCE(d.raw_metric_value, 0) as val,
                PERCENT_RANK() OVER (ORDER BY COALESCE(d.raw_metric_value, 0)) as pct
         FROM detected_issues d
-        LEFT JOIN ai_analysis a ON d.issue_id = a.issue_id
         WHERE d.issue_type COLLATE utf8mb4_unicode_ci = CONVERT(p_issue_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
           AND d.detected_at >= (NOW() - INTERVAL 24 HOUR)
           AND d.issue_id != p_issue_id
-          AND (a.severity_level != 'CRITICAL' OR a.severity_level IS NULL)
           AND (
                 (p_metric_group = 'LOW' AND COALESCE(d.raw_metric_value, 0) < 100) OR
                 (p_metric_group = 'MEDIUM' AND COALESCE(d.raw_metric_value, 0) >= 100 AND COALESCE(d.raw_metric_value, 0) < 1000) OR
