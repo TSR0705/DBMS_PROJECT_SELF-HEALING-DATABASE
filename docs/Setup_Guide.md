@@ -16,7 +16,7 @@ Ensure you have the following installed on your system:
 
 ## 🗄️ 1. Database Initialization
 
-The self-healing logic relies on specific triggers and metadata tables defined in the schema.
+The self-healing logic relies on specific stored procedures, metadata tables, and the MySQL Event Scheduler defined in the schema.
 
 1.  **Launch MySQL Service**: Ensure your local or remote instance is running.
 2.  **Create Database**:
@@ -27,7 +27,7 @@ The self-healing logic relies on specific triggers and metadata tables defined i
     ```bash
     mysql -u root -p dbms_self_healing < dbms_self_healing.sql
     ```
-    *This will create all 7 core tables and the specialized triggers.*
+    *This will create all core tables, stored procedures, and enable the 1-second Event Scheduler.*
 
 ---
 
@@ -80,5 +80,5 @@ INSERT INTO detected_issues (issue_type, detection_source, raw_metric_value, raw
 VALUES ('DEADLOCK', 'INNODB', 1.00, 'transaction');
 ```
 
-1.  Watch the **Backend Terminal**: You will see the Decision Engine classifying the issue.
-2.  Refresh the **UI Dashboard**: The anomaly will appear in the "Admin Control Center" or "Learning Ecosystem" tables based on the confidence score assigned.
+1.  Watch the **Database Logs or UI Dashboard**: Since the logic runs entirely via the MySQL Event Scheduler (every 1 second), the backend terminal simply serves API requests.
+2.  **Verify Action**: The anomaly will instantly be processed and appear in the "Execution Log" or "Admin Review" tables based on the dynamically calculated priority score.
