@@ -41,8 +41,15 @@ proc_label: BEGIN
     
     SET v_impact_weight = (LEAST(v_active_q, 20) / 20.0 * 0.7) + (LEAST(v_lock_w, 10) / 10.0 * 0.3);
     
-    -- Final Priority Formula
+    -- Normalize AI confidence score (Z-score ratio) to [0, 1] range for weighting
+    -- Z-score of 3.0 is considered 100% confidence in AI terms
+    SET v_confidence_score = LEAST(1.0, ABS(v_confidence_score) / 3.0);
+    
+    -- Final Priority Formula (Now bounded [0, 1])
     SET v_priority_score = (v_severity_weight * 0.3) + (v_confidence_score * 0.2) + (v_impact_weight * 0.5);
+    
+    -- Ensure absolute ceiling for UI safety
+    SET v_priority_score = LEAST(1.0, v_priority_score);
 
     -- [3] Authority Validation
     CALL validate_issue_state(p_issue_id, v_issue_exists);
@@ -63,7 +70,27 @@ proc_label: BEGIN
         VALUES (p_issue_id, v_decision_type, v_decision_reason, v_priority_score);
         SET @last_decision_id = LAST_INSERT_ID();
 
-        IF v_decision_type = 'AUTO_HEAL' THEN
+        -- [PHASE 7] DEADLOCK Prioritization & Race Condition Guard
+        IF v_issue_type = 'DEADLOCK' AND v_decision_type = 'AUTO_HEAL' THEN
+            -- Check for staleness (Race Condition Guard)
+            -- If more than 3 seconds passed since detection, it's too late for surgical deadlock kill
+            SELECT detected_at INTO @v_det_at FROM detected_issues WHERE issue_id = p_issue_id;
+            
+            IF TIMESTAMPDIFF(SECOND, @v_det_at, NOW()) > 3 THEN
+                INSERT INTO debug_log(step, message)
+                VALUES ('timing', CONCAT('DEADLOCK skipped: Stale by ', TIMESTAMPDIFF(SECOND, @v_det_at, NOW()), 's'));
+                
+                -- Update decision reason to reflect staleness
+                UPDATE decision_log SET decision_reason = CONCAT(decision_reason, ' [SKIPPED: STALE]') WHERE decision_id = @last_decision_id;
+            ELSE
+                -- IMMEDIATE EXECUTION: Bypass queue to minimize latency
+                INSERT INTO debug_log(step, message)
+                VALUES ('timing', CONCAT('DEADLOCK immediate execution. Delay: ', TIMESTAMPDIFF(SECOND, @v_det_at, NOW()), 's'));
+                
+                CALL execute_healing_action_v2(@last_decision_id);
+                -- No need to insert into queue as it's already handled
+            END IF;
+        ELSEIF v_decision_type = 'AUTO_HEAL' THEN
             INSERT INTO execution_queue (decision_id, priority_score, status)
             VALUES (@last_decision_id, v_priority_score, 'PENDING');
         ELSE

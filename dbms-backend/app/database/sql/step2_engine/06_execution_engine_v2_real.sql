@@ -18,6 +18,7 @@ proc_label: BEGIN
     DECLARE v_decision_type    VARCHAR(50);
     DECLARE v_mode             VARCHAR(50) DEFAULT 'AUTOMATIC';
     DECLARE v_by               VARCHAR(50) DEFAULT 'SYSTEM';
+    DECLARE v_blocking_trx     BIGINT UNSIGNED DEFAULT NULL;
 
     -- [1] Fetch Context
     SELECT dl.issue_id, di.issue_type, dl.decision_type
@@ -58,13 +59,33 @@ proc_label: BEGIN
                 SET v_exec_status = 'SUCCESS';
             END IF;
         ELSEIF v_action_type = 'ROLLBACK_TRANSACTION' THEN
-            SELECT trx_mysql_thread_id INTO v_process_id FROM information_schema.innodb_trx
-            ORDER BY trx_started ASC LIMIT 1;
+            -- [PHASE 7] Targeted Deadlock Resolution
+            -- 1. Extract blocking transaction details from sys view
+            SELECT blocking_trx_id INTO v_blocking_trx
+            FROM sys.innodb_lock_waits
+            ORDER BY wait_age_secs DESC
+            LIMIT 1;
+
+            -- 2. Map transaction ID to MySQL thread ID (Process ID)
+            IF v_blocking_trx IS NOT NULL THEN
+                SELECT trx_mysql_thread_id INTO v_process_id
+                FROM information_schema.innodb_trx
+                WHERE trx_id = v_blocking_trx
+                LIMIT 1;
+            END IF;
             
-            IF v_process_id IS NOT NULL THEN
+            -- 3. Validate and Execute Kill
+            IF v_process_id IS NOT NULL AND v_process_id != CONNECTION_ID() THEN
+                -- Debug logging
+                INSERT INTO debug_log(step, message)
+                VALUES ('deadlock_target', CONCAT('Killing blocking PID: ', v_process_id, ' for TRX: ', v_blocking_trx));
+
                 SET @sql = CONCAT('KILL ', v_process_id);
                 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
                 SET v_exec_status = 'SUCCESS';
+            ELSE
+                SET v_error_msg = 'No valid blocking process found to kill';
+                SET v_exec_status = 'FAILED';
             END IF;
         END IF;
 

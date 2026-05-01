@@ -54,9 +54,16 @@ proc_label: BEGIN
             ELSE
                 UPDATE execution_queue SET status = 'PROCESSING', last_attempt_time = NOW(), updated_at = NOW() WHERE queue_id = v_queue_id;
                 
-                -- [CONTEXT] Track execution start independently
-                INSERT INTO execution_context (queue_id, decision_id, status, worker_id, last_heartbeat)
-                VALUES (v_queue_id, v_decision_id, 'RUNNING', p_worker_id, NOW());
+                -- [CONTEXT] Track execution start independently (Parallel-safe retry)
+                INSERT INTO execution_context (queue_id, decision_id, status, worker_id, last_heartbeat, started_at, completed_at, error_message)
+                VALUES (v_queue_id, v_decision_id, 'RUNNING', p_worker_id, NOW(), NOW(), NULL, NULL)
+                ON DUPLICATE KEY UPDATE 
+                    status = 'RUNNING', 
+                    worker_id = p_worker_id, 
+                    last_heartbeat = NOW(), 
+                    started_at = NOW(),
+                    completed_at = NULL,
+                    error_message = NULL;
             END IF;
         END IF;
     COMMIT;
@@ -96,6 +103,11 @@ proc_label: BEGIN
                 SET status = 'FAILED', retry_count = v_max_retries, last_error = CONCAT('PERMANENT: ', v_error_msg), updated_at = NOW()
                 WHERE queue_id = v_queue_id;
             END IF;
+
+            -- [CONTEXT] Mark context as failed
+            UPDATE execution_context 
+            SET status = 'FAILED', completed_at = NOW(), error_message = v_error_msg 
+            WHERE queue_id = v_queue_id;
         END IF;
     END IF;
 END //
