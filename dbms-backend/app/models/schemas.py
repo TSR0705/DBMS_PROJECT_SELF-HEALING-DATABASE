@@ -69,15 +69,20 @@ class DecisionLog(BaseModel):
 class HealingAction(BaseModel):
     """
     Represents healing actions taken by the system.
-    Maps to healing_actions table structure.
+    Unified view combining decision, queue, and execution state.
     """
-    action_id: str = Field(..., description="Unique identifier for the healing action")
+    action_id: Optional[str] = Field(None, description="Unique identifier for the healing action")
     decision_id: str = Field(..., description="Reference to the related decision")
-    action_type: str = Field(..., description="Type of healing action performed")
-    execution_mode: str = Field(..., description="Mode of execution (AUTOMATIC/MANUAL)")
-    executed_by: str = Field(..., description="Who/what executed the action")
-    execution_status: str = Field(..., description="Current status of action execution")
-    executed_at: datetime = Field(..., description="Timestamp when action was executed")
+    issue_type: Optional[str] = Field(None, description="Type of issue being resolved")
+    decision_type: Optional[str] = Field(None, description="Type of decision made")
+    action_type: Optional[str] = Field(None, description="Type of healing action performed")
+    execution_mode: Optional[str] = Field(None, description="Mode of execution (AUTOMATIC/MANUAL)")
+    executed_by: Optional[str] = Field(None, description="Who/what executed the action")
+    queue_status: Optional[str] = Field(None, description="Status in the execution queue")
+    execution_status: Optional[str] = Field(None, description="Current status of action execution")
+    system_status: str = Field(..., description="Computed unified system status")
+    queued_at: Optional[datetime] = Field(None, description="Timestamp when task was queued")
+    executed_at: Optional[datetime] = Field(None, description="Timestamp when action was executed")
     
     class Config:
         json_encoders = {
