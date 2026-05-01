@@ -47,17 +47,41 @@ proc_label: BEGIN
 
         -- [4] Execution Logic
         IF v_action_type = 'KILL_CONNECTION' OR v_action_type = 'KILL_SLOW_QUERY' THEN
-            SELECT id INTO v_process_id FROM information_schema.processlist
-            WHERE command != 'Sleep' 
-              AND user NOT IN ('system user', 'event_scheduler')
-              AND id != CONNECTION_ID()
-            ORDER BY time DESC LIMIT 1;
+            -- [PHASE 7] Iterative Kill Loop for CONNECTION_OVERLOAD
+            SET @kill_count = 0;
+            SET @max_kills = 10; -- Safety break
             
-            IF v_process_id IS NOT NULL THEN
-                SET @sql = CONCAT('KILL ', v_process_id);
-                PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-                SET v_exec_status = 'SUCCESS';
-            END IF;
+            -- Re-check active queries
+            SELECT COUNT(*) INTO @v_current_active 
+            FROM information_schema.processlist 
+            WHERE command = 'Query' AND info IS NOT NULL;
+
+            WHILE @v_current_active > 5 AND @kill_count < @max_kills DO
+                SELECT id INTO v_process_id FROM information_schema.processlist
+                WHERE command = 'Query'
+                  AND info IS NOT NULL
+                  AND user NOT IN ('system user', 'event_scheduler')
+                  AND id != CONNECTION_ID()
+                ORDER BY time DESC LIMIT 1;
+                
+                IF v_process_id IS NOT NULL THEN
+                    INSERT INTO debug_log(step, message)
+                    VALUES ('overload_target', CONCAT('Killing PID: ', v_process_id, ' (Active: ', @v_current_active, ')'));
+
+                    SET @sql = CONCAT('KILL ', v_process_id);
+                    PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+                    
+                    SET @kill_count = @kill_count + 1;
+                    SET v_exec_status = 'SUCCESS';
+                    
+                    -- Re-fetch for next iteration
+                    SELECT COUNT(*) INTO @v_current_active 
+                    FROM information_schema.processlist 
+                    WHERE command = 'Query' AND info IS NOT NULL;
+                ELSE
+                    SET @v_current_active = 0; -- Break loop if no more candidates
+                END IF;
+            END WHILE;
         ELSEIF v_action_type = 'ROLLBACK_TRANSACTION' THEN
             -- [PHASE 7] Targeted Deadlock Resolution
             -- 1. Extract blocking transaction details from sys view
