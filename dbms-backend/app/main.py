@@ -59,7 +59,8 @@ from .routers import (
     decisions,
     actions,
     admin_reviews,
-    learning
+    learning,
+    stats
 )
 
 # Create FastAPI application
@@ -69,16 +70,21 @@ app = FastAPI(
     description="API for DBMS self-healing pipeline data"
 )
 
-# CORS configuration
+# CORS configuration - Allow all Vercel preview deployments
 allowed_origins_str = os.getenv('FRONTEND_URL', 'http://localhost:3000,https://dbms-project-self-healing-database.vercel.app')
 allowed_origins = [url.strip() for url in allowed_origins_str.split(',')]
+
+# Add wildcard for Vercel preview deployments
+allowed_origins.append('https://dbms-project-self-healing-database-*.vercel.app')
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["GET", "OPTIONS", "POST", "PUT"],
-    allow_headers=["Content-Type", "Authorization", "X-Admin-Token"],
+    allow_methods=["GET", "OPTIONS", "POST", "PUT", "DELETE", "PATCH"],
+    allow_headers=["*"],  # Allow all headers
+    expose_headers=["*"],  # Expose all headers
+    max_age=3600,  # Cache preflight requests for 1 hour
 )
 
 # Include routers
@@ -89,6 +95,7 @@ app.include_router(decisions.router)
 app.include_router(actions.router)
 app.include_router(admin_reviews.router)
 app.include_router(learning.router)
+app.include_router(stats.router)
 
 @app.get("/")
 def root():
