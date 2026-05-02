@@ -77,6 +77,18 @@ interface ActionStatsResponse {
     action_type: string;
   }>;
 }
+
+interface DatabaseCountsResponse {
+  total_issues: number;
+  total_analysis: number;
+  total_decisions: number;
+  total_actions: number;
+  total_reviews: number;
+  total_learning: number;
+  critical_issues: number;
+  pending_reviews: number;
+  auto_healed: number;
+}
 export interface IssueAnalysis {
   issue_id: string;
   predicted_issue_class: string;
@@ -429,6 +441,10 @@ class ApiClient {
   // Statistics APIs
   async getActionStats(): Promise<ActionStatsResponse> {
     return this.request<ActionStatsResponse>('/actions/stats/summary');
+  }
+
+  async getDatabaseCounts(): Promise<DatabaseCountsResponse> {
+    return this.request<DatabaseCountsResponse>('/stats/counts');
   }
 }
 
