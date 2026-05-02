@@ -61,6 +61,7 @@ class RealtimeService {
       // Fetch all data in parallel with error handling
       const [
         healthData,
+        countsData,
         issues,
         analysis,
         decisions,
@@ -69,6 +70,7 @@ class RealtimeService {
         learning,
       ] = await Promise.allSettled([
         apiClient.getDatabaseHealth(),
+        apiClient.getDatabaseCounts(),
         apiClient.getDetectedIssues(),
         apiClient.getAllAnalysis(),
         apiClient.getAllDecisions(),
@@ -80,6 +82,8 @@ class RealtimeService {
       // Process results with fallbacks
       const healthResult =
         healthData.status === 'fulfilled' ? healthData.value : null;
+      const countsResult =
+        countsData.status === 'fulfilled' ? countsData.value : null;
       const issuesResult = issues.status === 'fulfilled' ? issues.value : [];
       const analysisResult =
         analysis.status === 'fulfilled' ? analysis.value : [];
@@ -93,6 +97,7 @@ class RealtimeService {
       // Check for any failed requests
       const failedRequests = [
         healthData,
+        countsData,
         issues,
         analysis,
         decisions,
@@ -110,7 +115,7 @@ class RealtimeService {
 
       if (failedRequests.length > 0) {
         connectionStatus =
-          failedRequests.length === 7 ? 'disconnected' : 'error';
+          failedRequests.length === 8 ? 'disconnected' : 'error';
         lastError =
           failedRequests[0].status === 'rejected'
             ? failedRequests[0].reason?.message || 'Connection failed'
@@ -121,6 +126,7 @@ class RealtimeService {
       if (process.env.NODE_ENV !== 'production' && failedRequests.length > 0) {
         const endpoints = [
           '/health/database',
+          '/stats/counts',
           '/issues/',
           '/analysis/',
           '/decisions/',
@@ -138,7 +144,7 @@ class RealtimeService {
         });
       }
 
-      // Calculate metrics
+      // Calculate metrics - Use database counts for totals
       const isConnected =
         healthResult?.status === 'connected' &&
         connectionStatus !== 'disconnected';
@@ -259,18 +265,18 @@ class RealtimeService {
         );
       });
 
-      // Build comprehensive data object
+      // Build comprehensive data object - Use database counts for accurate totals
       this.data = {
         systemMetrics: {
-          totalIssues: dbStats.total_issues || issuesResult.length,
-          criticalIssues,
-          totalAnalysis: dbStats.total_analysis || analysisResult.length,
-          totalDecisions: dbStats.total_decisions || decisionsResult.length,
-          totalActions: dbStats.total_actions || actionsResult.length,
-          autoHealedCount,
-          totalReviews: dbStats.total_reviews || reviewsResult.length,
-          pendingReviews,
-          totalLearning: dbStats.total_learning || learningResult.length,
+          totalIssues: countsResult?.total_issues || issuesResult.length,
+          criticalIssues: countsResult?.critical_issues || criticalIssues,
+          totalAnalysis: countsResult?.total_analysis || analysisResult.length,
+          totalDecisions: countsResult?.total_decisions || decisionsResult.length,
+          totalActions: countsResult?.total_actions || actionsResult.length,
+          autoHealedCount: countsResult?.auto_healed || autoHealedCount,
+          totalReviews: countsResult?.total_reviews || reviewsResult.length,
+          pendingReviews: countsResult?.pending_reviews || pendingReviews,
+          totalLearning: countsResult?.total_learning || learningResult.length,
           isConnected,
           lastUpdate: new Date(),
           uptime: isConnected ? '99.97%' : '0%',
