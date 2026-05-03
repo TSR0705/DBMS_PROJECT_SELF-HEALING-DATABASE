@@ -82,12 +82,23 @@ BEGIN
             END IF;
         
         WHEN 'SECURITY_POLICY_VIOLATION' THEN
-            -- [DEMO] Event-based validation always true for the demo record
-            SET p_issue_exists = TRUE;
+            -- DYNAMIC: Check for any user with '%' (wildcard) host and GRANT privileges
+            -- This is a real security risk in many DBMS environments
+            SELECT COUNT(*) INTO v_active_queries
+            FROM mysql.user 
+            WHERE host = '%' AND (Grant_priv = 'Y' OR Super_priv = 'Y');
+            
+            IF v_active_queries > 0 THEN SET p_issue_exists = TRUE; END IF;
             
         WHEN 'OPTIMIZATION_SUGGESTION' THEN
-            -- [DEMO] Event-based validation always true for the demo record
-            SET p_issue_exists = TRUE;
+            -- DYNAMIC: Check for tables with significant fragmentation (> 10MB data_free)
+            -- This is a real performance metric that requires OPTIMIZE TABLE
+            SELECT COUNT(*) INTO v_active_queries
+            FROM information_schema.tables
+            WHERE data_free > 10 * 1024 * 1024 -- 10MB fragmentation
+              AND table_schema = 'dbms_self_healing';
+            
+            IF v_active_queries > 0 THEN SET p_issue_exists = TRUE; END IF;
 
         ELSE
             SET p_issue_exists = FALSE;
