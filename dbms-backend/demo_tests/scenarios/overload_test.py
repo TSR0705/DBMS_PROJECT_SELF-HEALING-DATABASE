@@ -1,6 +1,6 @@
 import time
 import threading
-from ..db_utils import get_connection, run_query, fetch_one, log_step, insert_and_get_id
+from ..db_utils import get_connection, run_query, fetch_one, log_step, insert_and_get_id, trigger_self_healing
 
 def overload_query():
     try:
@@ -41,8 +41,7 @@ def run_overload_test():
         ("CONNECTION_OVERLOAD", "INNODB", float(before_count), "CONNS")
     )
 
-    log_step("Waiting 3 seconds for iterative kill loop to execute...", "WARN")
-    time.sleep(3)
+    trigger_self_healing(issue_id)
 
     active_q_after = fetch_one("SELECT COUNT(*) as c FROM information_schema.processlist WHERE command = 'Query' AND info LIKE '%OVERLOAD_DEMO%'")
     after_count = active_q_after['c'] if active_q_after else 0

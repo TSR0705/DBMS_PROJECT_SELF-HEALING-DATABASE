@@ -1,6 +1,6 @@
 import time
 import threading
-from ..db_utils import get_connection, run_query, fetch_one, log_step, insert_and_get_id
+from ..db_utils import get_connection, run_query, fetch_one, log_step, insert_and_get_id, trigger_self_healing
 
 def background_slow_query():
     try:
@@ -38,8 +38,7 @@ def run_slow_query_test():
         ("SLOW_QUERY", "PERFORMANCE_SCHEMA", 20.0, "SECONDS")
     )
 
-    log_step("Waiting 3 seconds for self-healing engine to process...", "WARN")
-    time.sleep(3)
+    trigger_self_healing(issue_id)
 
     q_check_after = fetch_one("SELECT id FROM information_schema.processlist WHERE id = %s", (pid,))
     if q_check_after:
