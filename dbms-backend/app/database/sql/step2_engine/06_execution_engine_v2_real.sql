@@ -56,7 +56,7 @@ proc_label: BEGIN
             FROM information_schema.processlist 
             WHERE command = 'Query' AND info IS NOT NULL;
 
-            WHILE @v_current_active > 5 AND @kill_count < @max_kills DO
+            WHILE @v_current_active > (CASE WHEN v_issue_type = 'IDLE_TRANSACTION' THEN 0 ELSE 2 END) AND @kill_count < @max_kills DO
                 SELECT id INTO v_process_id FROM information_schema.processlist
                 WHERE command = 'Query'
                   AND info IS NOT NULL
