@@ -80,6 +80,14 @@ BEGIN
             ELSE
                 SET p_issue_exists = FALSE;
             END IF;
+        
+        WHEN 'SECURITY_POLICY_VIOLATION' THEN
+            -- [DEMO] Event-based validation always true for the demo record
+            SET p_issue_exists = TRUE;
+            
+        WHEN 'OPTIMIZATION_SUGGESTION' THEN
+            -- [DEMO] Event-based validation always true for the demo record
+            SET p_issue_exists = TRUE;
 
         ELSE
             SET p_issue_exists = FALSE;

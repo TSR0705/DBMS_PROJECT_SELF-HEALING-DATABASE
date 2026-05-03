@@ -48,11 +48,27 @@ def run_admin_review_scenarios():
     else:
         log_step("FAIL: System did not request review for optimization suggestion", "FAIL")
 
+    # [PHASE 7] NEW: Actually process the reviews to show "Really Working"
+    # Process Approval for Scenario 1
+    log_step(f"Admin APPROVING Security Policy (Decision: {decision_1['decision_id']})...")
+    run_query("CALL process_admin_review(%s, 'APPROVE')", (decision_1['decision_id'],))
+    
+    # Process Rejection for Scenario 2
+    log_step(f"Admin REJECTING Optimization Suggestion (Decision: {decision_2['decision_id']})...")
+    run_query("CALL process_admin_review(%s, 'REJECT')", (decision_2['decision_id'],))
+
+    # Verify Results
+    time.sleep(1)
+    rev1 = fetch_one("SELECT review_status FROM admin_reviews WHERE decision_id = %s", (decision_1['decision_id'],))
+    rev2 = fetch_one("SELECT review_status FROM admin_reviews WHERE decision_id = %s", (decision_2['decision_id'],))
+    
+    act1 = fetch_one("SELECT execution_status FROM healing_actions WHERE decision_id = %s", (decision_1['decision_id'],))
+
     return {
         'scenario': 'ADMIN_REVIEWS',
-        'status': 'PASS' if decision_1 and decision_2 else 'FAIL',
+        'status': 'PASS' if (rev1 and rev1['review_status'] == 'APPROVED' and rev2 and rev2['review_status'] == 'REJECTED') else 'FAIL',
         'details': {
-            'Security Policy': 'PENDING_REVIEW',
-            'Optimization': 'PENDING_REVIEW'
+            'Security Policy': f"APPROVED -> {act1['execution_status'] if act1 else 'PENDING'}",
+            'Optimization': 'REJECTED'
         }
     }
