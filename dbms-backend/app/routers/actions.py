@@ -37,12 +37,9 @@ async def get_healing_actions(
         h.verification_status,
         h.executed_at,
         CASE
-            WHEN d.decision_type = 'ADMIN_REVIEW' AND h.execution_status IS NULL THEN 'PENDING'
-            WHEN h.execution_status = 'SUCCESS' THEN 'SUCCESS'
-            WHEN h.execution_status = 'FAILED' THEN 'FAILED'
-            WHEN h.execution_status = 'SKIPPED' THEN 'SKIPPED'
-            WHEN h.execution_status IS NULL THEN 'PENDING'
-            ELSE 'UNKNOWN'
+            WHEN h.execution_status IS NOT NULL THEN h.execution_status
+            WHEN d.decision_type = 'ADMIN_REVIEW' THEN 'PENDING'
+            ELSE 'NOT_PROCESSED'
         END AS system_status
     FROM decision_log d
     JOIN detected_issues di ON d.issue_id = di.issue_id
