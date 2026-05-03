@@ -92,8 +92,11 @@ proc_label: BEGIN
                 CALL execute_healing_action_v2(@last_decision_id);
             END IF;
         ELSE
+            -- [PHASE 7] Fetch intended action for the review screen
+            SELECT action_type INTO @v_intended_action FROM action_rules WHERE issue_type = v_issue_type LIMIT 1;
+            
             INSERT INTO admin_reviews (issue_id, decision_id, review_status, issue_type, action_type)
-            VALUES (p_issue_id, @last_decision_id, 'PENDING', v_issue_type, 'MANUAL_VERIFICATION');
+            VALUES (p_issue_id, @last_decision_id, 'PENDING', v_issue_type, COALESCE(@v_intended_action, 'MANUAL_VERIFICATION'));
         END IF;
     END IF;
 END //
