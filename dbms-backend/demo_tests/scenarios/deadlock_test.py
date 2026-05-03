@@ -1,6 +1,6 @@
 import time
 import threading
-from ..db_utils import get_connection, run_query, fetch_one, log_step, insert_and_get_id
+from ..db_utils import get_connection, run_query, fetch_one, log_step, insert_and_get_id, trigger_self_healing
 
 def setup_test_table():
     run_query("CREATE TABLE IF NOT EXISTS demo_deadlock_test (id INT PRIMARY KEY, val INT)")
@@ -59,8 +59,7 @@ def run_deadlock_test():
         ("DEADLOCK", "INNODB", 1.0, "LOCKS")
     )
 
-    log_step("Waiting 3 seconds for sub-second engine to process...", "WARN")
-    time.sleep(3)
+    trigger_self_healing(issue_id)
 
     lock_check_after = fetch_one("SELECT * FROM sys.innodb_lock_waits")
     if lock_check_after:
