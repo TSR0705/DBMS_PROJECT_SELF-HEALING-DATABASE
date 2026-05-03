@@ -37,7 +37,8 @@ async def get_healing_actions(
         h.verification_status,
         h.executed_at,
         CASE
-            WHEN d.decision_type = 'ADMIN_REVIEW' AND h.execution_status IS NULL THEN 'PENDING'
+            WHEN ar.review_status = 'REJECTED' THEN 'REJECTED'
+            WHEN d.decision_type = 'ADMIN_REVIEW' AND h.execution_status IS NULL AND ar.review_status = 'PENDING' THEN 'WAITING_REVIEW'
             WHEN h.execution_status = 'SUCCESS' THEN 'SUCCESS'
             WHEN h.execution_status = 'FAILED' THEN 'FAILED'
             WHEN h.execution_status = 'SKIPPED' THEN 'SKIPPED'
@@ -47,6 +48,7 @@ async def get_healing_actions(
     FROM decision_log d
     JOIN detected_issues di ON d.issue_id = di.issue_id
     LEFT JOIN healing_actions h ON d.decision_id = h.decision_id
+    LEFT JOIN admin_reviews ar ON d.decision_id = ar.decision_id
     WHERE 1=1
     """
     
@@ -112,6 +114,7 @@ async def get_healing_action(
         d.decision_type,
         di.issue_type,
         CASE
+            WHEN ar.review_status = 'REJECTED' THEN 'REJECTED'
             WHEN h.execution_status = 'SUCCESS' THEN 'SUCCESS'
             WHEN h.execution_status = 'FAILED' THEN 'FAILED'
             WHEN h.execution_status = 'SKIPPED' THEN 'SKIPPED'
@@ -120,6 +123,7 @@ async def get_healing_action(
     FROM healing_actions h
     JOIN decision_log d ON h.decision_id = d.decision_id
     JOIN detected_issues di ON d.issue_id = di.issue_id
+    LEFT JOIN admin_reviews ar ON d.decision_id = ar.decision_id
     WHERE h.action_id = %s
     """
     
