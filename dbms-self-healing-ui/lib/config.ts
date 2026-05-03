@@ -14,7 +14,7 @@ export const DASHBOARD_CONFIG = {
     RECENT_DECISIONS: 50,    // Balanced: good decision history visibility
     RECENT_LEARNING: 30,     // Lower: learning records are less frequently accessed
     RECENT_REVIEWS: 100,     // Higher: admins need to see all pending reviews
-    RECENT_EVENTS: 50,       // Balanced: good pipeline visibility
+    RECENT_EVENTS: 30,       // Balanced: good pipeline visibility
   },
   
   // API settings
