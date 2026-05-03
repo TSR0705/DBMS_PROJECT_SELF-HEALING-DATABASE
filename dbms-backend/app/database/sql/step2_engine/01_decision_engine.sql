@@ -60,7 +60,13 @@ proc_label: BEGIN
         SET v_decision_reason = CONCAT('AUTO_HEAL authorized: Phase 7 Smart Priority (', ROUND(v_priority_score, 2), ')');
     ELSE
         SET v_decision_type = 'ADMIN_REVIEW';
-        SET v_decision_reason = CONCAT('ADMIN_REVIEW: DB state clean (Priority: ', ROUND(v_priority_score, 2), ')');
+        SET v_decision_reason = CONCAT('ADMIN_REVIEW: DB state clean/ambiguous (Priority: ', ROUND(v_priority_score, 2), ')');
+    END IF;
+
+    -- [PHASE 7] Manual Override for specific types (Safe Demo Scenarios)
+    IF v_issue_type IN ('SECURITY_POLICY_VIOLATION', 'OPTIMIZATION_SUGGESTION') THEN
+        SET v_decision_type = 'ADMIN_REVIEW';
+        SET v_decision_reason = 'ADMIN_REVIEW: Policy requires human sign-off for structural or security changes.';
     END IF;
 
     -- [5] Record Decision
